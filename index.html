@@ -8,8 +8,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Alpine.js -->
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -80,7 +78,7 @@
         </form>
       </div>
 
-      <!-- 紀錄展示區（切換：交易紀錄清單 / 圓餅圖） -->
+      <!-- 紀錄展示區（切換：交易紀錄清單 / 類別加總統計） -->
       <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
         
         <!-- 上方工具列：子視圖切換 + 年月動態選擇 + 統計資訊 -->
@@ -89,18 +87,18 @@
           <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
             <!-- 切換按鈕 (Segmented Control) -->
             <div class="bg-slate-100 p-1 rounded-xl flex items-center space-x-1">
-              <button @click="switchTrackerSubView('list')" :class="trackerSubView === 'list' ? 'bg-white text-emerald-600 font-bold shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="px-4 py-1.5 rounded-lg text-sm transition flex items-center gap-2">
+              <button @click="trackerSubView = 'list'" :class="trackerSubView === 'list' ? 'bg-white text-emerald-600 font-bold shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="px-4 py-1.5 rounded-lg text-sm transition flex items-center gap-2">
                 <i class="fa-solid fa-list"></i> 交易紀錄清單
               </button>
-              <button @click="switchTrackerSubView('pie')" :class="trackerSubView === 'pie' ? 'bg-white text-emerald-600 font-bold shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="px-4 py-1.5 rounded-lg text-sm transition flex items-center gap-2">
-                <i class="fa-solid fa-chart-pie"></i> 單月圓餅圖
+              <button @click="trackerSubView = 'summary'" :class="trackerSubView === 'summary' ? 'bg-white text-emerald-600 font-bold shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="px-4 py-1.5 rounded-lg text-sm transition flex items-center gap-2">
+                <i class="fa-solid fa-chart-bar"></i> 類別統計加總
               </button>
             </div>
 
             <!-- 動態年月下拉選單 (自動倒序，例：2026/10) -->
             <div class="flex items-center space-x-1 bg-slate-100 px-3 py-1 rounded-xl border border-slate-200">
               <span class="text-xs font-semibold text-slate-500">月份：</span>
-              <select x-model="selectedYearMonth" @change="onYearMonthChange()" class="bg-transparent font-bold text-emerald-700 text-sm outline-none cursor-pointer">
+              <select x-model="selectedYearMonth" class="bg-transparent font-bold text-emerald-700 text-sm outline-none cursor-pointer">
                 <template x-for="ym in availableYearMonths" :key="ym">
                   <option :value="ym" x-text="formatYearMonthLabel(ym)"></option>
                 </template>
@@ -112,16 +110,16 @@
             <!-- 搜尋框 (僅在清單視圖顯示) -->
             <input x-show="trackerSubView === 'list'" type="text" x-model="searchQuery" placeholder="搜尋備註/類別..." class="px-3 py-1.5 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500">
 
-            <!-- 圓餅圖收支切換 (僅在圓餅圖視圖顯示) -->
-            <select x-show="trackerSubView === 'pie'" x-model="pieType" @change="renderPieChart()" class="border border-slate-300 px-3 py-1.5 rounded-lg text-sm font-bold text-slate-700 outline-none">
-              <option value="expense">支出比例</option>
-              <option value="income">收入比例</option>
+            <!-- 類別統計收支切換 (僅在統計視圖顯示) -->
+            <select x-show="trackerSubView === 'summary'" x-model="summaryType" class="border border-slate-300 px-3 py-1.5 rounded-lg text-sm font-bold text-slate-700 outline-none">
+              <option value="expense">支出統計</option>
+              <option value="income">收入統計</option>
             </select>
 
             <!-- 本月小計 -->
             <div class="text-sm font-semibold flex gap-3">
-              <span class="text-emerald-600"><span x-text="formatYearMonthLabel(selectedYearMonth) + '收入:'"></span> <span class="font-bold" x-text="'+$' + monthlyIncome"></span></span>
-              <span class="text-rose-500"><span x-text="formatYearMonthLabel(selectedYearMonth) + '支出:'"></span> <span class="font-bold" x-text="'-$' + monthlyExpense"></span></span>
+              <span class="text-emerald-600"><span x-text="formatYearMonthLabel(selectedYearMonth) + '收入:'"></span> <span class="font-bold" x-text="'+$' + monthlyIncome.toLocaleString()"></span></span>
+              <span class="text-rose-500"><span x-text="formatYearMonthLabel(selectedYearMonth) + '支出:'"></span> <span class="font-bold" x-text="'-$' + monthlyExpense.toLocaleString()"></span></span>
             </div>
           </div>
         </div>
@@ -158,9 +156,28 @@
           </template>
         </div>
 
-        <!-- 視圖 2：單月圓餅圖 -->
-        <div x-show="trackerSubView === 'pie'" class="max-w-md mx-auto py-4">
-          <canvas id="pieChart"></canvas>
+        <!-- 視圖 2：類別加總統計 (純 HTML 進度條，即時動態計算) -->
+        <div x-show="trackerSubView === 'summary'" class="space-y-4 py-2">
+          <template x-for="cat in categorySummaryList" :key="cat.category">
+            <div class="space-y-1">
+              <div class="flex justify-between items-center text-sm">
+                <span class="font-bold text-slate-700" x-text="cat.category"></span>
+                <div class="space-x-2">
+                  <span class="text-xs text-slate-400" x-text="cat.percent + '%'"></span>
+                  <span class="font-bold" :class="summaryType === 'expense' ? 'text-rose-500' : 'text-emerald-600'" x-text="'$' + cat.amount.toLocaleString()"></span>
+                </div>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                <div class="h-3 rounded-full transition-all duration-300" 
+                     :class="summaryType === 'expense' ? 'bg-rose-500' : 'bg-emerald-500'" 
+                     :style="'width: ' + cat.percent + '%'"></div>
+              </div>
+            </div>
+          </template>
+
+          <template x-if="categorySummaryList.length === 0">
+            <div class="text-center py-8 text-slate-400" x-text="formatYearMonthLabel(selectedYearMonth) + ' 尚無此類別紀錄'"></div>
+          </template>
         </div>
 
       </div>
@@ -199,7 +216,7 @@
   <script>
     function appData() {
       return {
-        trackerSubView: 'list', // 'list' | 'pie'
+        trackerSubView: 'list', // 'list' | 'summary'
         webAppUrl: 'https://script.google.com/macros/s/AKfycbwxyqVeM-LHKa1dIa2JF9H0xF7xCvhyUdpMdeiyk4JIri4y8qqKKFQ-cRuVmuYQ7w5rLQ/exec',
         selectedYear: new Date().getFullYear().toString(),
         selectedYearMonth: '', // 格式例如: '2026-10'
@@ -221,8 +238,7 @@
 
         records: [],
         loading: false,
-        pieType: 'expense',
-        pieChartInstance: null,
+        summaryType: 'expense',
 
         initApp() {
           this.loadDataForYear(this.selectedYear);
@@ -266,7 +282,6 @@
 
         get availableYearMonths() {
           const ymSet = new Set();
-          
           this.records.forEach(r => {
             const dateStr = this.formatDateStr(r.日期 || r.date);
             if (dateStr && dateStr.length >= 7) {
@@ -311,15 +326,36 @@
         get monthlyIncome() {
           return this.monthlyRecords
             .filter(r => !this.isExpense(r))
-            .reduce((sum, r) => sum + Math.abs(Number(r.金額 || r.amount || 0)), 0)
-            .toLocaleString();
+            .reduce((sum, r) => sum + Math.abs(Number(r.金額 || r.amount || 0)), 0);
         },
 
         get monthlyExpense() {
           return this.monthlyRecords
             .filter(r => this.isExpense(r))
-            .reduce((sum, r) => sum + Math.abs(Number(r.金額 || r.amount || 0)), 0)
-            .toLocaleString();
+            .reduce((sum, r) => sum + Math.abs(Number(r.金額 || r.amount || 0)), 0);
+        },
+
+        // 動態即時計算類別金額加總與百分比
+        get categorySummaryList() {
+          const isExp = this.summaryType === 'expense';
+          const totalSum = isExp ? this.monthlyExpense : this.monthlyIncome;
+          const map = {};
+
+          this.monthlyRecords.forEach(r => {
+            if (this.isExpense(r) === isExp) {
+              const cat = r.類別 || r.category || '未分類';
+              const amt = Math.abs(Number(r.金額 || r.amount || 0));
+              map[cat] = (map[cat] || 0) + amt;
+            }
+          });
+
+          return Object.keys(map)
+            .map(cat => {
+              const amt = map[cat];
+              const pct = totalSum > 0 ? ((amt / totalSum) * 100).toFixed(1) : 0;
+              return { category: cat, amount: amt, percent: pct };
+            })
+            .sort((a, b) => b.amount - a.amount); // 金額由大到小排序
         },
 
         async loadDataForYear(year) {
@@ -337,25 +373,6 @@
               this.selectedYearMonth = this.availableYearMonths[0];
             }
           }
-
-          this.refreshCurrentView();
-        },
-
-        onYearMonthChange() {
-          this.refreshCurrentView();
-        },
-
-        switchTrackerSubView(view) {
-          this.trackerSubView = view;
-          if (view === 'pie') {
-            this.$nextTick(() => this.renderPieChart());
-          }
-        },
-
-        refreshCurrentView() {
-          if (this.trackerSubView === 'pie') {
-            this.$nextTick(() => this.renderPieChart());
-          }
         },
 
         async addRecord() {
@@ -365,7 +382,7 @@
           const addedDateYM = this.form.date.substring(0, 7);
           const newId = Date.now().toString();
 
-          // 1. 本地即時插入新紀錄 (Optimistic UI Update)
+          // 1. 本地即時更新
           const localRecord = {
             ID: newId,
             id: newId,
@@ -383,9 +400,8 @@
 
           this.records.unshift(localRecord);
           this.selectedYearMonth = addedDateYM;
-          this.refreshCurrentView();
 
-          // 2. 背景發送 POST 請求寫入 Google 試算表
+          // 2. 後端背景寫入
           const newItem = {
             action: 'add',
             type: this.form.type,
@@ -426,8 +442,7 @@
 
         async updateRecord() {
           this.loading = true;
-          
-          // 本地即時更新紀錄
+
           const idx = this.records.findIndex(r => (r.ID || r.id) === this.editForm.id);
           if (idx !== -1) {
             this.records[idx].日期 = this.editForm.date;
@@ -437,8 +452,6 @@
             this.records[idx].備註 = this.editForm.note;
             this.records[idx].note = this.editForm.note;
           }
-
-          this.refreshCurrentView();
 
           try {
             fetch(this.webAppUrl, {
@@ -461,10 +474,7 @@
           this.loading = true;
 
           const targetId = item.ID || item.id;
-          
-          // 本地即時刪除
           this.records = this.records.filter(r => (r.ID || r.id) !== targetId);
-          this.refreshCurrentView();
 
           try {
             fetch(this.webAppUrl, {
@@ -479,53 +489,6 @@
 
           this.loading = false;
           alert('已成功刪除該筆紀錄！');
-        },
-
-        renderPieChart() {
-          const canvasEl = document.getElementById('pieChart');
-          if (!canvasEl) return;
-
-          const targetCategories = this.pieType === 'expense' ? this.expenseCategories : this.incomeCategories;
-          const isExpTarget = this.pieType === 'expense';
-
-          const catSums = {};
-          targetCategories.forEach(c => catSums[c] = 0);
-
-          this.monthlyRecords.forEach(r => {
-            if (this.isExpense(r) === isExpTarget) {
-              const cat = r.類別 || r.category;
-              if (catSums[cat] !== undefined) {
-                catSums[cat] += Math.abs(Number(r.金額 || r.amount || 0));
-              }
-            }
-          });
-
-          const labels = Object.keys(catSums);
-          const dataValues = Object.values(catSums);
-
-          // 若圓餅圖實例已存在，直接覆寫並強制發送 update 指令
-          if (this.pieChartInstance) {
-            this.pieChartInstance.data.labels = labels;
-            this.pieChartInstance.data.datasets[0].data = dataValues;
-            this.pieChartInstance.update();
-          } else {
-            const ctx = canvasEl.getContext('2d');
-            this.pieChartInstance = new Chart(ctx, {
-              type: 'pie',
-              data: {
-                labels: labels,
-                datasets: [{
-                  data: dataValues,
-                  backgroundColor: ['#f87171', '#3b82f6', '#fbbf24', '#34d399', '#a78bfa', '#f472b6', '#9ca3af', '#fb923c', '#4ade80', '#22d3ee', '#818cf8', '#e879f9', '#a3e635']
-                }]
-              },
-              options: { 
-                responsive: true, 
-                animation: { duration: 200 },
-                plugins: { legend: { position: 'bottom' } } 
-              }
-            });
-          }
         }
       }
     }
