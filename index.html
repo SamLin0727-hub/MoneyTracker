@@ -12,6 +12,9 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    [x-cloak] { display: none !important; }
+  </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen pb-12" x-data="appData()" x-init="initApp()">
 
@@ -97,7 +100,7 @@
 
           <button type="submit" :disabled="loading" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-lg hover:bg-emerald-700 transition flex justify-center items-center gap-2">
             <i class="fa-solid fa-plus" x-show="!loading"></i>
-            <span x-text="loading ? '處理中...' : '儲存紀錄'"></span>
+            <span x-text="loading ? '儲存中...' : '儲存紀錄'"></span>
           </button>
         </form>
       </div>
@@ -127,12 +130,12 @@
             <div class="py-3 flex justify-between items-center hover:bg-slate-50 px-2 rounded-lg transition">
               <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold" :class="isExpense(item) ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'">
-                  <i class="fa-solid" :class="isExpense(item) ? 'fa-utensils' : 'fa-sack-dollar'"></i>
+                  <i class="fa-solid" :class="isExpense(item) ? 'fa-receipt' : 'fa-sack-dollar'"></i>
                 </div>
                 <div>
                   <div class="flex items-center space-x-2">
                     <span class="font-bold text-slate-800" x-text="item.類別 || item.category"></span>
-                    <span class="text-xs px-2 py-0.5 rounded text-slate-500 bg-slate-100" x-text="item.日期 || item.date"></span>
+                    <span class="text-xs px-2 py-0.5 rounded text-slate-500 bg-slate-100" x-text="formatDateStr(item.日期 || item.date)"></span>
                   </div>
                   <p class="text-xs text-slate-400" x-text="item.備註 || item.note || '無備註'"></p>
                 </div>
@@ -149,7 +152,7 @@
           </template>
           
           <template x-if="filteredRecords.length === 0">
-            <div class="text-center py-8 text-slate-400">查無交易紀錄</div>
+            <div class="text-center py-8 text-slate-400">尚無交易紀錄</div>
           </template>
         </div>
       </div>
@@ -224,7 +227,8 @@
     function appData() {
       return {
         activeTab: 'tracker',
-        webAppUrl: 'https://script.google.com/macros/s/AKfycbxD8BhK3xqXf4T0vqPTSkGlAxxZbj0dxfH9tmXgFbFYFOCfBnd3FzNlzBrRsBS7Y8TXHg/exec',
+        // 最新部署的 Web App URL
+        webAppUrl: 'https://script.google.com/macros/s/AKfycbwxyqVeM-LHKa1dIa2JF9H0xF7xCvhyUdpMdeiyk4JIri4y8qqKKFQ-cRuVmuYQ7w5rLQ/exec',
         selectedYear: new Date().getFullYear().toString(),
         selectedMonth: new Date().getMonth() + 1,
         availableYears: [new Date().getFullYear().toString()],
@@ -254,6 +258,16 @@
         initApp() {
           this.fetchAvailableYears();
           this.loadDataForYear(this.selectedYear);
+        },
+
+        // 日期格式化：徹底截取 YYYY-MM-DD，防範 ISO 時區偏置
+        formatDateStr(str) {
+          if (!str) return '';
+          let cleanStr = String(str);
+          if (cleanStr.includes('T')) {
+            cleanStr = cleanStr.split('T')[0];
+          }
+          return cleanStr.substring(0, 10);
         },
 
         get currentCategories() {
@@ -357,7 +371,7 @@
           this.editForm = {
             id: item.ID || item.id,
             type: this.isExpense(item) ? 'expense' : 'income',
-            date: item.日期 || item.date,
+            date: this.formatDateStr(item.日期 || item.date),
             category: item.類別 || item.category,
             amount: Math.abs(Number(item.金額 || item.amount || 0)),
             note: item.備註 || item.note || ''
@@ -404,8 +418,10 @@
         renderPieChart() {
           const targetCategories = this.pieType === 'expense' ? this.expenseCategories : this.incomeCategories;
           const monthFiltered = this.records.filter(r => {
-            const d = new Date(r.日期 || r.date);
-            return (d.getMonth() + 1) === Number(this.selectedMonth) && this.isExpense(r) === (this.pieType === 'expense');
+            const dateStr = this.formatDateStr(r.日期 || r.date);
+            const parts = dateStr.split('-');
+            const recordMonth = parts.length >= 2 ? parseInt(parts[1], 10) : 0;
+            return recordMonth === Number(this.selectedMonth) && this.isExpense(r) === (this.pieType === 'expense');
           });
 
           const catSums = {};
@@ -441,8 +457,14 @@
             const monthlyData = Array(12).fill(0);
             this.records.forEach(r => {
               if (this.isExpense(r) && (r.類別 || r.category) === cat) {
-                const m = new Date(r.日期 || r.date).getMonth();
-                monthlyData[m] += Math.abs(Number(r.金額 || r.amount || 0));
+                const dateStr = this.formatDateStr(r.日期 || r.date);
+                const parts = dateStr.split('-');
+                if (parts.length >= 2) {
+                  const m = parseInt(parts[1], 10) - 1;
+                  if (m >= 0 && m < 12) {
+                    monthlyData[m] += Math.abs(Number(r.金額 || r.amount || 0));
+                  }
+                }
               }
             });
 
