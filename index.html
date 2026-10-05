@@ -124,14 +124,17 @@
           </div>
         </div>
 
-        <!-- 視圖 1：交易紀錄清單 (日期倒序排列) -->
+        <!-- 視圖 1：交易紀錄清單 (依類別動態呈現圖示與顏色) -->
         <div x-show="trackerSubView === 'list'" class="divide-y divide-slate-100">
           <template x-for="item in filteredMonthlyRecords" :key="item.ID || item.id">
             <div class="py-3 flex justify-between items-center hover:bg-slate-50 px-2 rounded-lg transition">
               <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold" :class="isExpense(item) ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'">
-                  <i class="fa-solid" :class="isExpense(item) ? 'fa-receipt' : 'fa-sack-dollar'"></i>
+                
+                <!-- 類別圖示與配色背景 -->
+                <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold" :class="getCategoryStyle(item.類別 || item.category).bgClass">
+                  <i :class="getCategoryStyle(item.類別 || item.category).icon"></i>
                 </div>
+
                 <div>
                   <div class="flex items-center space-x-2">
                     <span class="font-bold text-slate-800" x-text="item.類別 || item.category"></span>
@@ -156,12 +159,15 @@
           </template>
         </div>
 
-        <!-- 視圖 2：類別加總統計 (純 HTML 進度條，即時動態計算) -->
+        <!-- 視圖 2：類別加總統計 (連動專屬顏色進度條) -->
         <div x-show="trackerSubView === 'summary'" class="space-y-4 py-2">
           <template x-for="cat in categorySummaryList" :key="cat.category">
             <div class="space-y-1">
               <div class="flex justify-between items-center text-sm">
-                <span class="font-bold text-slate-700" x-text="cat.category"></span>
+                <div class="flex items-center space-x-2">
+                  <i :class="getCategoryStyle(cat.category).icon + ' ' + getCategoryStyle(cat.category).textClass"></i>
+                  <span class="font-bold text-slate-700" x-text="cat.category"></span>
+                </div>
                 <div class="space-x-2">
                   <span class="text-xs text-slate-400" x-text="cat.percent + '%'"></span>
                   <span class="font-bold" :class="summaryType === 'expense' ? 'text-rose-500' : 'text-emerald-600'" x-text="'$' + cat.amount.toLocaleString()"></span>
@@ -169,7 +175,7 @@
               </div>
               <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
                 <div class="h-3 rounded-full transition-all duration-300" 
-                     :class="summaryType === 'expense' ? 'bg-rose-500' : 'bg-emerald-500'" 
+                     :class="getCategoryStyle(cat.category).barClass" 
                      :style="'width: ' + cat.percent + '%'"></div>
               </div>
             </div>
@@ -225,6 +231,28 @@
         incomeCategories: ['薪水', '兼職', '獎金', '紅包', '中獎'],
         expenseCategories: ['飲食', '住家', '交通', '購物', '醫療', '旅遊', 'Pet麻糬', '電信費', '電費', '水費', '瓦斯費', '手續費', '娛樂'],
         
+        // 分類圖示與顏色映射字典 (Pet麻糬套用兔子紅蘿蔔/寵物圖示)
+        categoryStyles: {
+          '飲食': { icon: 'fa-solid fa-utensils', bgClass: 'bg-amber-100 text-amber-600', textClass: 'text-amber-500', barClass: 'bg-amber-500' },
+          '住家': { icon: 'fa-solid fa-house', bgClass: 'bg-indigo-100 text-indigo-600', textClass: 'text-indigo-500', barClass: 'bg-indigo-500' },
+          '交通': { icon: 'fa-solid fa-car', bgClass: 'bg-blue-100 text-blue-600', textClass: 'text-blue-500', barClass: 'bg-blue-500' },
+          '購物': { icon: 'fa-solid fa-bag-shopping', bgClass: 'bg-pink-100 text-pink-600', textClass: 'text-pink-500', barClass: 'bg-pink-500' },
+          '醫療': { icon: 'fa-solid fa-notes-medical', bgClass: 'bg-red-100 text-red-600', textClass: 'text-red-500', barClass: 'bg-red-500' },
+          '旅遊': { icon: 'fa-solid fa-plane', bgClass: 'bg-sky-100 text-sky-600', textClass: 'text-sky-500', barClass: 'bg-sky-500' },
+          'Pet麻糬': { icon: 'fa-solid fa-carrot', bgClass: 'bg-orange-100 text-orange-600', textClass: 'text-orange-500', barClass: 'bg-orange-500' },
+          '電信費': { icon: 'fa-solid fa-mobile-screen-button', bgClass: 'bg-cyan-100 text-cyan-600', textClass: 'text-cyan-500', barClass: 'bg-cyan-500' },
+          '電費': { icon: 'fa-solid fa-bolt', bgClass: 'bg-yellow-100 text-yellow-600', textClass: 'text-yellow-500', barClass: 'bg-yellow-500' },
+          '水費': { icon: 'fa-solid fa-droplet', bgClass: 'bg-teal-100 text-teal-600', textClass: 'text-teal-500', barClass: 'bg-teal-500' },
+          '瓦斯費': { icon: 'fa-solid fa-fire', bgClass: 'bg-rose-100 text-rose-600', textClass: 'text-rose-500', barClass: 'bg-rose-500' },
+          '手續費': { icon: 'fa-solid fa-receipt', bgClass: 'bg-slate-200 text-slate-700', textClass: 'text-slate-600', barClass: 'bg-slate-500' },
+          '娛樂': { icon: 'fa-solid fa-gamepad', bgClass: 'bg-purple-100 text-purple-600', textClass: 'text-purple-500', barClass: 'bg-purple-500' },
+          '薪水': { icon: 'fa-solid fa-money-bill-wave', bgClass: 'bg-emerald-100 text-emerald-600', textClass: 'text-emerald-500', barClass: 'bg-emerald-500' },
+          '兼職': { icon: 'fa-solid fa-briefcase', bgClass: 'bg-green-100 text-green-600', textClass: 'text-green-500', barClass: 'bg-green-500' },
+          '獎金': { icon: 'fa-solid fa-trophy', bgClass: 'bg-yellow-100 text-yellow-600', textClass: 'text-yellow-500', barClass: 'bg-yellow-500' },
+          '紅包': { icon: 'fa-solid fa-envelope-open-text', bgClass: 'bg-red-100 text-red-600', textClass: 'text-red-500', barClass: 'bg-red-500' },
+          '中獎': { icon: 'fa-solid fa-gift', bgClass: 'bg-fuchsia-100 text-fuchsia-600', textClass: 'text-fuchsia-500', barClass: 'bg-fuchsia-500' }
+        },
+
         form: {
           type: 'expense',
           date: new Date().toISOString().split('T')[0],
@@ -242,6 +270,15 @@
 
         initApp() {
           this.loadDataForYear(this.selectedYear);
+        },
+
+        getCategoryStyle(category) {
+          return this.categoryStyles[category] || {
+            icon: 'fa-solid fa-tags',
+            bgClass: 'bg-slate-100 text-slate-600',
+            textClass: 'text-slate-500',
+            barClass: 'bg-slate-500'
+          };
         },
 
         formatDateStr(str) {
@@ -335,7 +372,6 @@
             .reduce((sum, r) => sum + Math.abs(Number(r.金額 || r.amount || 0)), 0);
         },
 
-        // 動態即時計算類別金額加總與百分比
         get categorySummaryList() {
           const isExp = this.summaryType === 'expense';
           const totalSum = isExp ? this.monthlyExpense : this.monthlyIncome;
@@ -355,7 +391,7 @@
               const pct = totalSum > 0 ? ((amt / totalSum) * 100).toFixed(1) : 0;
               return { category: cat, amount: amt, percent: pct };
             })
-            .sort((a, b) => b.amount - a.amount); // 金額由大到小排序
+            .sort((a, b) => b.amount - a.amount);
         },
 
         async loadDataForYear(year) {
@@ -382,7 +418,6 @@
           const addedDateYM = this.form.date.substring(0, 7);
           const newId = Date.now().toString();
 
-          // 1. 本地即時更新
           const localRecord = {
             ID: newId,
             id: newId,
@@ -401,7 +436,6 @@
           this.records.unshift(localRecord);
           this.selectedYearMonth = addedDateYM;
 
-          // 2. 後端背景寫入
           const newItem = {
             action: 'add',
             type: this.form.type,
