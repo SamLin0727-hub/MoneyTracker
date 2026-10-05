@@ -93,7 +93,7 @@
       <!-- 紀錄展示區（切換：交易紀錄清單 / 圓餅圖） -->
       <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
         
-        <!-- 上方工具列：子視圖切換 + 月份選擇 + 統計資訊 -->
+        <!-- 上方工具列：子視圖切換 + 年月動態選擇 + 統計資訊 -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-4 border-b border-slate-100">
           
           <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
@@ -107,13 +107,12 @@
               </button>
             </div>
 
-            <!-- 月份下拉選擇器 (搬移至此) -->
+            <!-- 動態年月下拉選單 (自動倒序，例：2026/10) -->
             <div class="flex items-center space-x-1 bg-slate-100 px-3 py-1 rounded-xl border border-slate-200">
               <span class="text-xs font-semibold text-slate-500">月份：</span>
-              <select x-model="selectedMonth" @change="onMonthChange()" class="bg-transparent font-bold text-emerald-700 text-sm outline-none cursor-pointer">
-                <option value="all">全年度</option>
-                <template x-for="m in 12" :key="m">
-                  <option :value="m" x-text="m + ' 月'"></option>
+              <select x-model="selectedYearMonth" @change="onYearMonthChange()" class="bg-transparent font-bold text-emerald-700 text-sm outline-none cursor-pointer">
+                <template x-for="ym in availableYearMonths" :key="ym">
+                  <option :value="ym" x-text="formatYearMonthLabel(ym)"></option>
                 </template>
               </select>
             </div>
@@ -129,10 +128,10 @@
               <option value="income">收入比例</option>
             </select>
 
-            <!-- 本月 / 本年小計 -->
+            <!-- 本月小計 -->
             <div class="text-sm font-semibold flex gap-3">
-              <span class="text-emerald-600"><span x-text="(selectedMonth === 'all' ? '全年' : selectedMonth + '月') + '收入:'"></span> <span class="font-bold" x-text="'+$' + monthlyIncome"></span></span>
-              <span class="text-rose-500"><span x-text="(selectedMonth === 'all' ? '全年' : selectedMonth + '月') + '支出:'"></span> <span class="font-bold" x-text="'-$' + monthlyExpense"></span></span>
+              <span class="text-emerald-600"><span x-text="formatYearMonthLabel(selectedYearMonth) + '收入:'"></span> <span class="font-bold" x-text="'+$' + monthlyIncome"></span></span>
+              <span class="text-rose-500"><span x-text="formatYearMonthLabel(selectedYearMonth) + '支出:'"></span> <span class="font-bold" x-text="'-$' + monthlyExpense"></span></span>
             </div>
           </div>
         </div>
@@ -165,7 +164,7 @@
           </template>
           
           <template x-if="filteredMonthlyRecords.length === 0">
-            <div class="text-center py-8 text-slate-400" x-text="selectedYear + ' 年 ' + (selectedMonth === 'all' ? '' : selectedMonth + ' 月') + '無符合條件的交易紀錄'"></div>
+            <div class="text-center py-8 text-slate-400" x-text="formatYearMonthLabel(selectedYearMonth) + ' 無符合條件的交易紀錄'"></div>
           </template>
         </div>
 
@@ -181,7 +180,7 @@
     <div x-show="activeTab === 'trend'" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
       <div class="flex flex-col md:flex-row justify-between items-center gap-4">
         
-        <!-- 年份改為下拉式選單 -->
+        <!-- 年份下拉選單 -->
         <div class="flex items-center space-x-2">
           <select x-model="selectedYear" @change="loadDataForYear(selectedYear)" class="text-lg font-bold text-slate-700 bg-slate-100 border border-slate-300 rounded-lg px-2 py-1 outline-none cursor-pointer">
             <template x-for="year in availableYears" :key="year">
@@ -238,7 +237,7 @@
         trackerSubView: 'list', // 'list' | 'pie'
         webAppUrl: 'https://script.google.com/macros/s/AKfycbwxyqVeM-LHKa1dIa2JF9H0xF7xCvhyUdpMdeiyk4JIri4y8qqKKFQ-cRuVmuYQ7w5rLQ/exec',
         selectedYear: new Date().getFullYear().toString(),
-        selectedMonth: (new Date().getMonth() + 1).toString(),
+        selectedYearMonth: '', // 格式例如: '2026-10'
         availableYears: [new Date().getFullYear().toString()],
         searchQuery: '',
         
@@ -277,6 +276,13 @@
           return cleanStr.substring(0, 10);
         },
 
+        formatYearMonthLabel(ymStr) {
+          if (!ymStr) return '';
+          const parts = ymStr.split('-');
+          if (parts.length < 2) return ymStr;
+          return `${parts[0]}年${parseInt(parts[1], 10)}月`;
+        },
+
         get currentCategories() {
           return this.form.type === 'expense' ? this.expenseCategories : this.incomeCategories;
         },
@@ -297,19 +303,40 @@
           return (this.isExpense(item) ? '-$' : '+$') + amt.toLocaleString();
         },
 
-        // 依據選擇的月份篩選，並按日期「降序/倒序」排列
-        get monthlyRecords() {
-          return this.records.filter(r => {
-            if (this.selectedMonth === 'all') return true;
+        // 自動從紀錄中擷取有資料的「年月」（例如 '2026-10'），並按最新日期降序排序
+        get availableYearMonths() {
+          const ymSet = new Set();
+          
+          this.records.forEach(r => {
             const dateStr = this.formatDateStr(r.日期 || r.date);
-            const parts = dateStr.split('-');
-            const m = parts.length >= 2 ? parseInt(parts[1], 10) : 0;
-            return m === Number(this.selectedMonth);
+            if (dateStr && dateStr.length >= 7) {
+              ymSet.add(dateStr.substring(0, 7)); // 取前 7 碼 YYYY-MM
+            }
+          });
+
+          // 若完全沒資料，預設放入當月
+          if (ymSet.size === 0) {
+            const now = new Date();
+            const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            ymSet.add(currentYM);
+          }
+
+          // 降序排序（倒序）：最新的年月在前面
+          return Array.from(ymSet).sort((a, b) => b.localeCompare(a));
+        },
+
+        // 依據選取的特定年月篩選，並依據日期降序（倒序）排列
+        get monthlyRecords() {
+          if (!this.selectedYearMonth) return [];
+
+          return this.records.filter(r => {
+            const dateStr = this.formatDateStr(r.日期 || r.date);
+            return dateStr.startsWith(this.selectedYearMonth);
           }).sort((a, b) => {
             const dateA = this.formatDateStr(a.日期 || a.date);
             const dateB = this.formatDateStr(b.日期 || b.date);
             if (dateA !== dateB) {
-              return dateB.localeCompare(dateA); // 日期大（新）的在前面
+              return dateB.localeCompare(dateA); // 日期大 (新) 的在前面
             }
             return (b.ID || b.id || 0) - (a.ID || a.id || 0);
           });
@@ -358,10 +385,18 @@
           } catch (e) {
             console.error('載入失敗', e);
           }
+
+          // 載入資料後，預設選擇最新的有資料年月
+          if (this.availableYearMonths.length > 0) {
+            if (!this.selectedYearMonth || !this.availableYearMonths.includes(this.selectedYearMonth)) {
+              this.selectedYearMonth = this.availableYearMonths[0];
+            }
+          }
+
           this.refreshCurrentView();
         },
 
-        onMonthChange() {
+        onYearMonthChange() {
           this.refreshCurrentView();
         },
 
