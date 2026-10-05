@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tally - 智能記帳與財務分析系統</title>
+  <title>記帳與財務分析系統</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Alpine.js -->
@@ -23,17 +23,27 @@
     <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
       <div class="flex items-center space-x-3">
         <i class="fa-solid fa-wallet text-2xl"></i>
-        <h1 class="text-xl font-bold tracking-wide">Tally 個人記帳與財務分析</h1>
+        <h1 class="text-xl font-bold tracking-wide">個人記帳與財務分析</h1>
       </div>
       
-      <!-- 年份切換器 -->
-      <div class="flex items-center space-x-2 bg-emerald-700 px-3 py-1.5 rounded-lg">
-        <span class="text-sm font-medium">檢視年份：</span>
-        <select x-model="selectedYear" @change="loadDataForYear(selectedYear)" class="bg-emerald-800 text-white font-bold px-2 py-1 rounded outline-none cursor-pointer">
-          <template x-for="year in availableYears" :key="year">
-            <option :value="year" x-text="year + ' 年'"></option>
-          </template>
-        </select>
+      <!-- 年份與月份切換器 -->
+      <div class="flex items-center space-x-3 bg-emerald-700 px-3 py-1.5 rounded-lg">
+        <div class="flex items-center space-x-1">
+          <span class="text-xs font-medium text-emerald-200">年份：</span>
+          <select x-model="selectedYear" @change="loadDataForYear(selectedYear)" class="bg-emerald-800 text-white font-bold px-2 py-1 rounded outline-none cursor-pointer text-sm">
+            <template x-for="year in availableYears" :key="year">
+              <option :value="year" x-text="year + ' 年'"></option>
+            </template>
+          </select>
+        </div>
+        <div class="flex items-center space-x-1">
+          <span class="text-xs font-medium text-emerald-200">月份：</span>
+          <select x-model="selectedMonth" @change="onMonthChange()" class="bg-emerald-800 text-white font-bold px-2 py-1 rounded outline-none cursor-pointer text-sm">
+            <template x-for="m in 12" :key="m">
+              <option :value="m" x-text="m + ' 月'"></option>
+            </template>
+          </select>
+        </div>
       </div>
     </div>
   </header>
@@ -41,28 +51,23 @@
   <!-- 主要內容區 -->
   <main class="max-w-6xl mx-auto px-4 mt-6 space-y-6">
 
-    <!-- 頁籤切換 -->
+    <!-- 主頁籤切換 -->
     <div class="flex border-b border-slate-200 bg-white rounded-t-xl px-4 pt-2">
       <button @click="activeTab = 'tracker'" :class="activeTab === 'tracker' ? 'border-b-2 border-emerald-600 text-emerald-600 font-bold' : 'text-slate-500 hover:text-slate-700'" class="px-5 py-3 transition">
-        <i class="fa-solid fa-pen-to-square me-2"></i>記帳與紀錄
+        <i class="fa-solid fa-list-check me-2"></i>記帳與紀錄
       </button>
-      <button @click="activeTab = 'pie'" :class="activeTab === 'pie' ? 'border-b-2 border-emerald-600 text-emerald-600 font-bold' : 'text-slate-500 hover:text-slate-700'" class="px-5 py-3 transition">
-        <i class="fa-solid fa-chart-pie me-2"></i>單月比例 (圓餅圖)
-      </button>
-      <button @click="activeTab = 'trend'" :class="activeTab === 'trend' ? 'border-b-2 border-emerald-600 text-emerald-600 font-bold' : 'text-slate-500 hover:text-slate-700'" class="px-5 py-3 transition">
-        <i class="fa-solid fa-chart-line me-2"></i>月度走勢 (長條/波浪圖)
+      <button @click="switchTab('trend')" :class="activeTab === 'trend' ? 'border-b-2 border-emerald-600 text-emerald-600 font-bold' : 'text-slate-500 hover:text-slate-700'" class="px-5 py-3 transition">
+        <i class="fa-solid fa-chart-line me-2"></i>年度走勢分析
       </button>
     </div>
 
-    <!-- Tab 1: 記帳與紀錄清單 -->
+    <!-- Tab 1: 記帳與紀錄（含清單與圓餅圖切換） -->
     <div x-show="activeTab === 'tracker'" class="space-y-6">
       
       <!-- 記帳表單 -->
       <div class="bg-white p-6 rounded-b-xl shadow-sm border border-slate-200">
         <h2 class="text-lg font-bold mb-4 text-slate-700">新增交易紀錄</h2>
         <form @submit.prevent="addRecord" class="space-y-4">
-          
-          <!-- 收支類型切換按鈕 -->
           <div>
             <label class="block text-xs font-semibold text-slate-500 mb-1">收支類型</label>
             <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl">
@@ -105,28 +110,43 @@
         </form>
       </div>
 
-      <!-- 交易紀錄清單 -->
+      <!-- 紀錄展示區（切換：交易紀錄清單 / 圓餅圖） -->
       <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-          <div class="flex items-center space-x-2">
-            <i class="fa-solid fa-list-check text-emerald-600"></i>
-            <h2 class="text-lg font-bold text-slate-700" x-text="'交易紀錄清單 (共 ' + filteredRecords.length + ' 筆)'"></h2>
-          </div>
+        
+        <!-- 上方工具列：子視圖切換 + 統計資訊 -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-4 border-b border-slate-100">
           
-          <div class="flex items-center gap-3 w-full md:w-auto">
-            <!-- 搜尋框 -->
-            <input type="text" x-model="searchQuery" placeholder="搜尋備註/類別..." class="px-3 py-1.5 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500">
-            <!-- 統計數字 -->
+          <!-- 切換按鈕 (Segmented Control) -->
+          <div class="bg-slate-100 p-1 rounded-xl flex items-center space-x-1 w-full md:w-auto">
+            <button @click="trackerSubView = 'list'" :class="trackerSubView === 'list' ? 'bg-white text-emerald-600 font-bold shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 md:flex-none px-4 py-1.5 rounded-lg text-sm transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-list"></i> 交易紀錄清單
+            </button>
+            <button @click="switchTrackerSubView('pie')" :class="trackerSubView === 'pie' ? 'bg-white text-emerald-600 font-bold shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 md:flex-none px-4 py-1.5 rounded-lg text-sm transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-chart-pie"></i> 單月圓餅圖
+            </button>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-4 w-full md:w-auto justify-between md:justify-end">
+            <!-- 搜尋框 (僅在清單視圖顯示) -->
+            <input x-show="trackerSubView === 'list'" type="text" x-model="searchQuery" placeholder="搜尋備註/類別..." class="px-3 py-1.5 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+
+            <!-- 圓餅圖收支切換 (僅在圓餅圖視圖顯示) -->
+            <select x-show="trackerSubView === 'pie'" x-model="pieType" @change="renderPieChart()" class="border border-slate-300 px-3 py-1.5 rounded-lg text-sm font-bold text-slate-700 outline-none">
+              <option value="expense">支出比例</option>
+              <option value="income">收入比例</option>
+            </select>
+
+            <!-- 本月小計 -->
             <div class="text-sm font-semibold flex gap-3">
-              <span class="text-emerald-600">收入: <span class="font-bold" x-text="'+$' + totalIncome"></span></span>
-              <span class="text-rose-500">支出: <span class="font-bold" x-text="'-$' + totalExpense"></span></span>
+              <span class="text-emerald-600"><span x-text="selectedMonth + '月收入:'"></span> <span class="font-bold" x-text="'+$' + monthlyIncome"></span></span>
+              <span class="text-rose-500"><span x-text="selectedMonth + '月支出:'"></span> <span class="font-bold" x-text="'-$' + monthlyExpense"></span></span>
             </div>
           </div>
         </div>
 
-        <!-- 明細列表 -->
-        <div class="divide-y divide-slate-100">
-          <template x-for="item in filteredRecords" :key="item.ID || item.id">
+        <!-- 視圖 1：交易紀錄清單 (日期倒序排列) -->
+        <div x-show="trackerSubView === 'list'" class="divide-y divide-slate-100">
+          <template x-for="item in filteredMonthlyRecords" :key="item.ID || item.id">
             <div class="py-3 flex justify-between items-center hover:bg-slate-50 px-2 rounded-lg transition">
               <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold" :class="isExpense(item) ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'">
@@ -151,36 +171,21 @@
             </div>
           </template>
           
-          <template x-if="filteredRecords.length === 0">
-            <div class="text-center py-8 text-slate-400">尚無交易紀錄</div>
+          <template x-if="filteredMonthlyRecords.length === 0">
+            <div class="text-center py-8 text-slate-400" x-text="selectedYear + ' 年 ' + selectedMonth + ' 月無符合條件的交易紀錄'"></div>
           </template>
         </div>
-      </div>
-    </div>
 
-    <!-- Tab 2: 單月大項比例 (圓餅圖) -->
-    <div x-show="activeTab === 'pie'" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4" x-init="$watch('activeTab', value => { if(value === 'pie') renderPieChart(); })">
-      <div class="flex justify-between items-center">
-        <h2 class="text-lg font-bold text-slate-700">月份類別比例</h2>
-        <div class="flex gap-2">
-          <select x-model="pieType" @change="renderPieChart()" class="border border-slate-300 px-3 py-1.5 rounded-lg text-sm font-bold text-slate-700 outline-none">
-            <option value="expense">支出比例</option>
-            <option value="income">收入比例</option>
-          </select>
-          <select x-model="selectedMonth" @change="renderPieChart()" class="border border-slate-300 px-3 py-1.5 rounded-lg text-sm font-bold text-emerald-600 outline-none">
-            <template x-for="m in 12" :key="m">
-              <option :value="m" x-text="m + ' 月'"></option>
-            </template>
-          </select>
+        <!-- 視圖 2：單月圓餅圖 -->
+        <div x-show="trackerSubView === 'pie'" class="max-w-md mx-auto py-4">
+          <canvas id="pieChart"></canvas>
         </div>
-      </div>
-      <div class="max-w-md mx-auto py-4">
-        <canvas id="pieChart"></canvas>
+
       </div>
     </div>
 
-    <!-- Tab 3: 月度走勢 (長條圖 / 波浪圖) -->
-    <div x-show="activeTab === 'trend'" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4" x-init="$watch('activeTab', value => { if(value === 'trend') renderTrendChart(); })">
+    <!-- Tab 2: 月度走勢 (長條圖 / 波浪圖) -->
+    <div x-show="activeTab === 'trend'" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
       <div class="flex flex-col md:flex-row justify-between items-center gap-4">
         <h2 class="text-lg font-bold text-slate-700" x-text="selectedYear + ' 年支出月度走勢'"></h2>
         <div class="bg-slate-100 p-1 rounded-lg flex text-xs font-bold">
@@ -227,7 +232,7 @@
     function appData() {
       return {
         activeTab: 'tracker',
-        // 最新部署的 Web App URL
+        trackerSubView: 'list', // 'list' | 'pie'
         webAppUrl: 'https://script.google.com/macros/s/AKfycbwxyqVeM-LHKa1dIa2JF9H0xF7xCvhyUdpMdeiyk4JIri4y8qqKKFQ-cRuVmuYQ7w5rLQ/exec',
         selectedYear: new Date().getFullYear().toString(),
         selectedMonth: new Date().getMonth() + 1,
@@ -260,7 +265,6 @@
           this.loadDataForYear(this.selectedYear);
         },
 
-        // 日期格式化：徹底截取 YYYY-MM-DD，防範 ISO 時區偏置
         formatDateStr(str) {
           if (!str) return '';
           let cleanStr = String(str);
@@ -290,24 +294,43 @@
           return (this.isExpense(item) ? '-$' : '+$') + amt.toLocaleString();
         },
 
-        get filteredRecords() {
-          if (!this.searchQuery) return this.records;
+        // 核心改進：僅取得「當月份」紀錄，並依據日期「降序 / 倒序」排列
+        get monthlyRecords() {
+          const targetM = Number(this.selectedMonth);
+          return this.records.filter(r => {
+            const dateStr = this.formatDateStr(r.日期 || r.date);
+            const parts = dateStr.split('-');
+            const m = parts.length >= 2 ? parseInt(parts[1], 10) : 0;
+            return m === targetM;
+          }).sort((a, b) => {
+            const dateA = this.formatDateStr(a.日期 || a.date);
+            const dateB = this.formatDateStr(b.日期 || b.date);
+            if (dateA !== dateB) {
+              return dateB.localeCompare(dateA); // 日期大（新）的在前面
+            }
+            return (b.ID || b.id || 0) - (a.ID || a.id || 0);
+          });
+        },
+
+        // 清單搜尋過濾
+        get filteredMonthlyRecords() {
+          if (!this.searchQuery) return this.monthlyRecords;
           const q = this.searchQuery.toLowerCase();
-          return this.records.filter(r => 
+          return this.monthlyRecords.filter(r => 
             (r.類別 || r.category || '').toLowerCase().includes(q) ||
             (r.備註 || r.note || '').toLowerCase().includes(q)
           );
         },
 
-        get totalIncome() {
-          return this.records
+        get monthlyIncome() {
+          return this.monthlyRecords
             .filter(r => !this.isExpense(r))
             .reduce((sum, r) => sum + Math.abs(Number(r.金額 || r.amount || 0)), 0)
             .toLocaleString();
         },
 
-        get totalExpense() {
-          return this.records
+        get monthlyExpense() {
+          return this.monthlyRecords
             .filter(r => this.isExpense(r))
             .reduce((sum, r) => sum + Math.abs(Number(r.金額 || r.amount || 0)), 0)
             .toLocaleString();
@@ -332,8 +355,33 @@
           } catch (e) {
             console.error('載入失敗', e);
           }
-          if (this.activeTab === 'pie') this.renderPieChart();
-          if (this.activeTab === 'trend') this.renderTrendChart();
+          this.refreshCurrentView();
+        },
+
+        onMonthChange() {
+          this.refreshCurrentView();
+        },
+
+        switchTab(tab) {
+          this.activeTab = tab;
+          if (tab === 'trend') {
+            this.$nextTick(() => this.renderTrendChart());
+          }
+        },
+
+        switchTrackerSubView(view) {
+          this.trackerSubView = view;
+          if (view === 'pie') {
+            this.$nextTick(() => this.renderPieChart());
+          }
+        },
+
+        refreshCurrentView() {
+          if (this.activeTab === 'tracker' && this.trackerSubView === 'pie') {
+            this.renderPieChart();
+          } else if (this.activeTab === 'trend') {
+            this.renderTrendChart();
+          }
         },
 
         async addRecord() {
@@ -415,41 +463,58 @@
           this.loadDataForYear(this.selectedYear);
         },
 
+        // 圓餅圖效能優化版：優先使用 .update()，避免重繪卡頓
         renderPieChart() {
+          const canvasEl = document.getElementById('pieChart');
+          if (!canvasEl) return;
+
           const targetCategories = this.pieType === 'expense' ? this.expenseCategories : this.incomeCategories;
-          const monthFiltered = this.records.filter(r => {
-            const dateStr = this.formatDateStr(r.日期 || r.date);
-            const parts = dateStr.split('-');
-            const recordMonth = parts.length >= 2 ? parseInt(parts[1], 10) : 0;
-            return recordMonth === Number(this.selectedMonth) && this.isExpense(r) === (this.pieType === 'expense');
-          });
+          const isExpTarget = this.pieType === 'expense';
 
           const catSums = {};
           targetCategories.forEach(c => catSums[c] = 0);
-          monthFiltered.forEach(r => {
-            const cat = r.類別 || r.category;
-            if (catSums[cat] !== undefined) {
-              catSums[cat] += Math.abs(Number(r.金額 || r.amount || 0));
+
+          this.monthlyRecords.forEach(r => {
+            if (this.isExpense(r) === isExpTarget) {
+              const cat = r.類別 || r.category;
+              if (catSums[cat] !== undefined) {
+                catSums[cat] += Math.abs(Number(r.金額 || r.amount || 0));
+              }
             }
           });
 
-          const ctx = document.getElementById('pieChart').getContext('2d');
-          if (this.pieChartInstance) this.pieChartInstance.destroy();
+          const labels = Object.keys(catSums);
+          const dataValues = Object.values(catSums);
 
-          this.pieChartInstance = new Chart(ctx, {
-            type: 'pie',
-            data: {
-              labels: Object.keys(catSums),
-              datasets: [{
-                data: Object.values(catSums),
-                backgroundColor: ['#f87171', '#3b82f6', '#fbbf24', '#34d399', '#a78bfa', '#f472b6', '#9ca3af', '#fb923c', '#4ade80', '#22d3ee', '#818cf8', '#e879f9', '#a3e635']
-              }]
-            },
-            options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-          });
+          if (this.pieChartInstance) {
+            this.pieChartInstance.data.labels = labels;
+            this.pieChartInstance.data.datasets[0].data = dataValues;
+            this.pieChartInstance.update();
+          } else {
+            const ctx = canvasEl.getContext('2d');
+            this.pieChartInstance = new Chart(ctx, {
+              type: 'pie',
+              data: {
+                labels: labels,
+                datasets: [{
+                  data: dataValues,
+                  backgroundColor: ['#f87171', '#3b82f6', '#fbbf24', '#34d399', '#a78bfa', '#f472b6', '#9ca3af', '#fb923c', '#4ade80', '#22d3ee', '#818cf8', '#e879f9', '#a3e635']
+                }]
+              },
+              options: { 
+                responsive: true, 
+                animation: { duration: 300 },
+                plugins: { legend: { position: 'bottom' } } 
+              }
+            });
+          }
         },
 
+        // 走勢圖效能優化版
         renderTrendChart() {
+          const canvasEl = document.getElementById('trendChart');
+          if (!canvasEl) return;
+
           const monthLabels = Array.from({ length: 12 }, (_, i) => (i + 1) + '月');
           const colors = ['#f87171', '#3b82f6', '#fbbf24', '#34d399', '#a78bfa', '#f472b6', '#9ca3af', '#fb923c', '#4ade80', '#22d3ee', '#818cf8', '#e879f9', '#a3e635'];
 
@@ -478,19 +543,25 @@
             };
           });
 
-          const ctx = document.getElementById('trendChart').getContext('2d');
-          if (this.trendChartInstance) this.trendChartInstance.destroy();
-
-          this.trendChartInstance = new Chart(ctx, {
-            type: this.chartType,
-            data: { labels: monthLabels, datasets: datasets },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              scales: { y: { beginAtZero: true } },
-              plugins: { legend: { position: 'bottom' } }
-            }
-          });
+          if (this.trendChartInstance) {
+            this.trendChartInstance.config.type = this.chartType;
+            this.trendChartInstance.data.labels = monthLabels;
+            this.trendChartInstance.data.datasets = datasets;
+            this.trendChartInstance.update();
+          } else {
+            const ctx = canvasEl.getContext('2d');
+            this.trendChartInstance = new Chart(ctx, {
+              type: this.chartType,
+              data: { labels: monthLabels, datasets: datasets },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 300 },
+                scales: { y: { beginAtZero: true } },
+                plugins: { legend: { position: 'bottom' } }
+              }
+            });
+          }
         }
       }
     }
