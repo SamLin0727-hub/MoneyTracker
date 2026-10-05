@@ -31,21 +31,11 @@
   <!-- 主要內容區 -->
   <main class="max-w-6xl mx-auto px-4 mt-6 space-y-6">
 
-    <!-- 主頁籤切換 -->
-    <div class="flex border-b border-slate-200 bg-white rounded-t-xl px-4 pt-2">
-      <button @click="activeTab = 'tracker'" :class="activeTab === 'tracker' ? 'border-b-2 border-emerald-600 text-emerald-600 font-bold' : 'text-slate-500 hover:text-slate-700'" class="px-5 py-3 transition">
-        <i class="fa-solid fa-list-check me-2"></i>記帳與紀錄
-      </button>
-      <button @click="switchTab('trend')" :class="activeTab === 'trend' ? 'border-b-2 border-emerald-600 text-emerald-600 font-bold' : 'text-slate-500 hover:text-slate-700'" class="px-5 py-3 transition">
-        <i class="fa-solid fa-chart-line me-2"></i>年度走勢分析
-      </button>
-    </div>
-
-    <!-- Tab 1: 記帳與紀錄（含清單與圓餅圖切換） -->
-    <div x-show="activeTab === 'tracker'" class="space-y-6">
+    <!-- 記帳與紀錄 -->
+    <div class="space-y-6">
       
       <!-- 記帳表單 -->
-      <div class="bg-white p-6 rounded-b-xl shadow-sm border border-slate-200">
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
         <h2 class="text-lg font-bold mb-4 text-slate-700">新增交易紀錄</h2>
         <form @submit.prevent="addRecord" class="space-y-4">
           <div>
@@ -176,30 +166,6 @@
       </div>
     </div>
 
-    <!-- Tab 2: 月度走勢 (長條圖 / 波浪圖) -->
-    <div x-show="activeTab === 'trend'" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
-      <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-        
-        <!-- 年份下拉選單 -->
-        <div class="flex items-center space-x-2">
-          <select x-model="selectedYear" @change="loadDataForYear(selectedYear)" class="text-lg font-bold text-slate-700 bg-slate-100 border border-slate-300 rounded-lg px-2 py-1 outline-none cursor-pointer">
-            <template x-for="year in availableYears" :key="year">
-              <option :value="year" x-text="year + ' 年'"></option>
-            </template>
-          </select>
-          <span class="text-lg font-bold text-slate-700">支出月度走勢</span>
-        </div>
-
-        <div class="bg-slate-100 p-1 rounded-lg flex text-xs font-bold">
-          <button @click="chartType = 'bar'; renderTrendChart()" :class="chartType === 'bar' ? 'bg-white text-emerald-600 shadow' : 'text-slate-500'" class="px-3 py-1.5 rounded-md transition">長條圖</button>
-          <button @click="chartType = 'line'; renderTrendChart()" :class="chartType === 'line' ? 'bg-white text-emerald-600 shadow' : 'text-slate-500'" class="px-3 py-1.5 rounded-md transition">波浪圖</button>
-        </div>
-      </div>
-      <div class="w-full py-4 min-h-[350px]">
-        <canvas id="trendChart"></canvas>
-      </div>
-    </div>
-
   </main>
 
   <!-- 修改 Modal 彈窗 -->
@@ -233,12 +199,10 @@
   <script>
     function appData() {
       return {
-        activeTab: 'tracker',
         trackerSubView: 'list', // 'list' | 'pie'
         webAppUrl: 'https://script.google.com/macros/s/AKfycbwxyqVeM-LHKa1dIa2JF9H0xF7xCvhyUdpMdeiyk4JIri4y8qqKKFQ-cRuVmuYQ7w5rLQ/exec',
         selectedYear: new Date().getFullYear().toString(),
         selectedYearMonth: '', // 格式例如: '2026-10'
-        availableYears: [new Date().getFullYear().toString()],
         searchQuery: '',
         
         incomeCategories: ['薪水', '兼職', '獎金', '紅包', '中獎'],
@@ -259,11 +223,8 @@
         loading: false,
         pieType: 'expense',
         pieChartInstance: null,
-        trendChartInstance: null,
-        chartType: 'bar',
 
         initApp() {
-          this.fetchAvailableYears();
           this.loadDataForYear(this.selectedYear);
         },
 
@@ -366,16 +327,6 @@
             .toLocaleString();
         },
 
-        async fetchAvailableYears() {
-          try {
-            const res = await fetch(`${this.webAppUrl}?action=getYears`);
-            const data = await res.json();
-            if (data.years && data.years.length > 0) this.availableYears = data.years;
-          } catch (e) {
-            console.warn('年份載入失敗，使用預設年份', e);
-          }
-        },
-
         async loadDataForYear(year) {
           this.selectedYear = year;
           try {
@@ -400,13 +351,6 @@
           this.refreshCurrentView();
         },
 
-        switchTab(tab) {
-          this.activeTab = tab;
-          if (tab === 'trend') {
-            this.$nextTick(() => this.renderTrendChart());
-          }
-        },
-
         switchTrackerSubView(view) {
           this.trackerSubView = view;
           if (view === 'pie') {
@@ -415,10 +359,8 @@
         },
 
         refreshCurrentView() {
-          if (this.activeTab === 'tracker' && this.trackerSubView === 'pie') {
+          if (this.trackerSubView === 'pie') {
             this.$nextTick(() => this.renderPieChart());
-          } else if (this.activeTab === 'trend') {
-            this.$nextTick(() => this.renderTrendChart());
           }
         },
 
@@ -426,7 +368,7 @@
           if (!this.form.amount || this.form.amount <= 0) return;
           this.loading = true;
 
-          const addedDateYM = this.form.date.substring(0, 7); // 取得新增資料的年月
+          const addedDateYM = this.form.date.substring(0, 7);
 
           const newItem = {
             action: 'add',
@@ -452,7 +394,6 @@
           this.form.note = '';
           this.loading = false;
           
-          // 自動將目前選取的年月移至新增數據的月份
           this.selectedYearMonth = addedDateYM;
 
           alert('紀錄新增成功！');
@@ -548,59 +489,6 @@
                 responsive: true, 
                 animation: { duration: 300 },
                 plugins: { legend: { position: 'bottom' } } 
-              }
-            });
-          }
-        },
-
-        renderTrendChart() {
-          const canvasEl = document.getElementById('trendChart');
-          if (!canvasEl) return;
-
-          const monthLabels = Array.from({ length: 12 }, (_, i) => (i + 1) + '月');
-          const colors = ['#f87171', '#3b82f6', '#fbbf24', '#34d399', '#a78bfa', '#f472b6', '#9ca3af', '#fb923c', '#4ade80', '#22d3ee', '#818cf8', '#e879f9', '#a3e635'];
-
-          const datasets = this.expenseCategories.map((cat, idx) => {
-            const monthlyData = Array(12).fill(0);
-            this.records.forEach(r => {
-              if (this.isExpense(r) && (r.類別 || r.category) === cat) {
-                const dateStr = this.formatDateStr(r.日期 || r.date);
-                const parts = dateStr.split('-');
-                if (parts.length >= 2) {
-                  const m = parseInt(parts[1], 10) - 1;
-                  if (m >= 0 && m < 12) {
-                    monthlyData[m] += Math.abs(Number(r.金額 || r.amount || 0));
-                  }
-                }
-              }
-            });
-
-            return {
-              label: cat,
-              data: monthlyData,
-              backgroundColor: colors[idx % colors.length],
-              borderColor: colors[idx % colors.length],
-              tension: 0.4,
-              fill: false
-            };
-          });
-
-          if (this.trendChartInstance) {
-            this.trendChartInstance.config.type = this.chartType;
-            this.trendChartInstance.data.labels = monthLabels;
-            this.trendChartInstance.data.datasets = datasets;
-            this.trendChartInstance.update();
-          } else {
-            const ctx = canvasEl.getContext('2d');
-            this.trendChartInstance = new Chart(ctx, {
-              type: this.chartType,
-              data: { labels: monthLabels, datasets: datasets },
-              options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: { duration: 300 },
-                scales: { y: { beginAtZero: true } },
-                plugins: { legend: { position: 'bottom' } }
               }
             });
           }
