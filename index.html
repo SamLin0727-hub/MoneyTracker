@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-TW" class="overflow-x-hidden">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -12,47 +12,69 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     [x-cloak] { display: none !important; }
-    
-    /* 核心防爆版與盒模型重置 */
+
+    /* 全域防爆版與盒模型重置 */
     *, ::before, ::after {
       box-sizing: border-box !important;
     }
+    
+    html, body {
+      max-width: 100vw !important;
+      overflow-x: hidden !important;
+    }
 
-    /* 防止 iOS Safari 在 focus 時自動放大頁面，統一基礎字級 */
-    input, select, button {
-      font-size: 16px !important;
+    /* 修正 iOS Safari / WebKit 在 input 與 select 上的原生寬度與跑版問題 */
+    input, select, textarea {
       -webkit-appearance: none;
       -moz-appearance: none;
       appearance: none;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+      min-height: 42px;
+      background-color: #ffffff;
+      border-radius: 0.5rem;
     }
 
-    /* 客製化 select 下拉箭頭 */
+    /* 確保 iOS 日期選擇器文字垂直居中 */
+    input[type="date"] {
+      display: flex;
+      align-items: center;
+    }
+
+    /* 為下拉選單在 iOS 上加上清晰的向下箭頭 */
     .custom-select {
-      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2064748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
       background-repeat: no-repeat;
       background-position: right 0.5rem center;
-      background-size: 1em;
-      padding-right: 1.8rem !important;
+      background-size: 0.85rem;
+      padding-right: 1.75rem !important;
+    }
+
+    /* 防止 iOS Safari 在 input focus 時自動放大頁面造成跳動 */
+    @media screen and (-webkit-min-device-pixel-ratio:0) {
+      select, textarea, input {
+        font-size: 16px !important;
+      }
     }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen pb-12 overflow-x-hidden" x-data="appData()" x-init="initApp()">
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-12 w-full overflow-x-hidden" x-data="appData()" x-init="initApp()">
 
   <!-- 頂部導覽列 -->
-  <header class="bg-emerald-600 text-white shadow-md">
-    <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+  <header class="bg-emerald-600 text-white shadow-md sticky top-0 z-30 w-full">
+    <div class="max-w-6xl mx-auto px-4 py-3 sm:py-4 flex justify-between items-center">
       <div class="flex items-center space-x-3">
-        <i class="fa-solid fa-wallet text-2xl"></i>
-        <h1 class="text-xl font-bold tracking-wide">個人記帳與財務分析</h1>
+        <i class="fa-solid fa-wallet text-xl sm:text-2xl"></i>
+        <h1 class="text-lg sm:text-xl font-bold tracking-wide">個人記帳與財務分析</h1>
       </div>
     </div>
   </header>
 
   <!-- 主要內容區 -->
-  <main class="max-w-6xl mx-auto px-4 mt-6 space-y-6 w-full box-border">
+  <main class="max-w-6xl mx-auto px-3 sm:px-4 mt-4 sm:mt-6 space-y-6 w-full max-w-full overflow-hidden">
 
     <!-- 記帳與紀錄 -->
-    <div class="space-y-6 w-full">
+    <div class="space-y-6 w-full max-w-full">
       
       <!-- 記帳表單 -->
       <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 w-full box-border overflow-hidden">
@@ -70,57 +92,68 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 w-full">
+          <!-- 表單主要欄位區域 -->
+          <div class="space-y-4 w-full">
             
-            <!-- 日期：純下拉式選單 (年 / 月 / 日) -->
+            <!-- 第一行（大螢幕）：日期獨佔一行 / （小螢幕）：年獨佔一行，月與日下一行 -->
             <div class="w-full">
               <label class="block text-xs font-semibold text-slate-500 mb-1">日期</label>
-              <div class="grid grid-cols-3 gap-1.5 w-full">
-                <!-- 年 -->
-                <select x-model="formYear" @change="updateFormDateFromDropdown()" class="custom-select w-full px-2 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-xs sm:text-sm font-medium">
-                  <template x-for="y in yearOptions" :key="y">
-                    <option :value="y" x-text="y + '年'"></option>
-                  </template>
-                </select>
-                <!-- 月 -->
-                <select x-model="formMonth" @change="updateFormDateFromDropdown()" class="custom-select w-full px-2 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-xs sm:text-sm font-medium">
-                  <template x-for="m in 12" :key="m">
-                    <option :value="String(m).padStart(2, '0')" x-text="m + '月'"></option>
-                  </template>
-                </select>
-                <!-- 日 -->
-                <select x-model="formDay" @change="updateFormDateFromDropdown()" class="custom-select w-full px-2 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-xs sm:text-sm font-medium">
-                  <template x-for="d in formDaysInMonth" :key="d">
-                    <option :value="String(d).padStart(2, '0')" x-text="d + '日'"></option>
-                  </template>
-                </select>
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-2 w-full">
+                <!-- 年：手機版獨佔 2 欄 (full)，電腦版佔 1 欄 -->
+                <div class="col-span-2 md:col-span-1">
+                  <select x-model="formYear" @change="updateFormDateFromDropdown()" class="custom-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-medium">
+                    <template x-for="y in yearOptions" :key="y">
+                      <option :value="y" x-text="y + '年'"></option>
+                    </template>
+                  </select>
+                </div>
+                <!-- 月：手機版各佔 1 欄，電腦版佔 1 欄 -->
+                <div class="col-span-1">
+                  <select x-model="formMonth" @change="updateFormDateFromDropdown()" class="custom-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-medium">
+                    <template x-for="m in 12" :key="m">
+                      <option :value="String(m).padStart(2, '0')" x-text="m + '月'"></option>
+                    </template>
+                  </select>
+                </div>
+                <!-- 日：手機版各佔 1 欄，電腦版佔 1 欄 -->
+                <div class="col-span-1">
+                  <select x-model="formDay" @change="updateFormDateFromDropdown()" class="custom-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-medium">
+                    <template x-for="d in formDaysInMonth" :key="d">
+                      <option :value="String(d).padStart(2, '0')" x-text="d + '日'"></option>
+                    </template>
+                  </select>
+                </div>
               </div>
             </div>
 
-            <!-- 分類 -->
-            <div class="w-full">
-              <label class="block text-xs font-semibold text-slate-500 mb-1">分類</label>
-              <select x-model="form.category" class="custom-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm">
-                <template x-for="cat in currentCategories" :key="cat">
-                  <option :value="cat" x-text="cat"></option>
-                </template>
-              </select>
+            <!-- 第二行（大螢幕）：分類與金額平分；（小螢幕）：各自一行 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+              <!-- 分類 -->
+              <div class="w-full">
+                <label class="block text-xs font-semibold text-slate-500 mb-1">分類</label>
+                <select x-model="form.category" class="custom-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm">
+                  <template x-for="cat in currentCategories" :key="cat">
+                    <option :value="cat" x-text="cat"></option>
+                  </template>
+                </select>
+              </div>
+
+              <!-- 金額 -->
+              <div class="w-full">
+                <label class="block text-xs font-semibold text-slate-500 mb-1">金額 ($)</label>
+                <input type="number" x-model.number="form.amount" required min="1" placeholder="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm">
+              </div>
             </div>
 
-            <!-- 金額 -->
-            <div class="w-full">
-              <label class="block text-xs font-semibold text-slate-500 mb-1">金額 ($)</label>
-              <input type="number" x-model.number="form.amount" required min="1" placeholder="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm">
-            </div>
-
-            <!-- 備註 -->
+            <!-- 第三行（大螢幕與小螢幕）：備註獨佔一行 -->
             <div class="w-full">
               <label class="block text-xs font-semibold text-slate-500 mb-1">備註</label>
               <input type="text" x-model="form.note" placeholder="例如：薪水、午餐" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm">
             </div>
+
           </div>
 
-          <button type="submit" :disabled="loading" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-lg hover:bg-emerald-700 transition flex justify-center items-center gap-2">
+          <button type="submit" :disabled="loading" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-lg hover:bg-emerald-700 transition flex justify-center items-center gap-2 mt-2">
             <i class="fa-solid fa-plus" x-show="!loading"></i>
             <span x-text="loading ? '儲存中...' : '儲存紀錄'"></span>
           </button>
@@ -128,26 +161,26 @@
       </div>
 
       <!-- 紀錄展示區（切換：交易紀錄清單 / 類別加總統計） -->
-      <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 w-full box-border overflow-hidden">
+      <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 w-full max-w-full overflow-hidden">
         
         <!-- 上方工具列：子視圖切換 + 年月動態選擇 + 統計資訊 -->
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-4 border-b border-slate-100 w-full">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-4 mb-4 sm:mb-6 pb-4 border-b border-slate-100 w-full max-w-full">
           
-          <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
             <!-- 切換按鈕 (Segmented Control) -->
             <div class="bg-slate-100 p-1 rounded-xl flex items-center space-x-1 w-full sm:w-auto">
-              <button @click="trackerSubView = 'list'" :class="trackerSubView === 'list' ? 'bg-white text-emerald-600 font-bold shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-sm transition flex items-center justify-center gap-2">
+              <button @click="trackerSubView = 'list'" :class="trackerSubView === 'list' ? 'bg-white text-emerald-600 font-bold shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 sm:flex-initial px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm transition flex items-center justify-center gap-1.5">
                 <i class="fa-solid fa-list"></i> 交易紀錄清單
               </button>
-              <button @click="trackerSubView = 'summary'" :class="trackerSubView === 'summary' ? 'bg-white text-emerald-600 font-bold shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-sm transition flex items-center justify-center gap-2">
+              <button @click="trackerSubView = 'summary'" :class="trackerSubView === 'summary' ? 'bg-white text-emerald-600 font-bold shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 sm:flex-initial px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm transition flex items-center justify-center gap-1.5">
                 <i class="fa-solid fa-chart-bar"></i> 類別統計加總
               </button>
             </div>
 
             <!-- 動態年月下拉選單 -->
             <div class="flex items-center space-x-1 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 w-full sm:w-auto justify-between sm:justify-start">
-              <span class="text-xs font-semibold text-slate-500">月份：</span>
-              <select x-model="selectedYearMonth" class="custom-select bg-transparent font-bold text-emerald-700 text-sm outline-none cursor-pointer pr-6">
+              <span class="text-xs font-semibold text-slate-500 whitespace-nowrap">月份：</span>
+              <select x-model="selectedYearMonth" class="custom-select bg-transparent font-bold text-emerald-700 text-xs sm:text-sm outline-none cursor-pointer border-none py-0 min-h-0">
                 <template x-for="ym in availableYearMonths" :key="ym">
                   <option :value="ym" x-text="formatYearMonthLabel(ym)"></option>
                 </template>
@@ -155,18 +188,18 @@
             </div>
           </div>
 
-          <div class="flex flex-wrap items-center gap-4 w-full md:w-auto justify-between md:justify-end">
+          <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-between md:justify-end">
             <!-- 搜尋框 (僅在清單視圖顯示) -->
-            <input x-show="trackerSubView === 'list'" type="text" x-model="searchQuery" placeholder="搜尋備註/類別..." class="w-full sm:w-auto px-3 py-1.5 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+            <input x-show="trackerSubView === 'list'" type="text" x-model="searchQuery" placeholder="搜尋備註/類別..." class="w-full sm:w-auto px-3 py-1.5 border border-slate-300 rounded-lg text-xs sm:text-sm outline-none focus:ring-2 focus:ring-emerald-500">
 
             <!-- 類別統計收支切換 (僅在統計視圖顯示) -->
-            <select x-show="trackerSubView === 'summary'" x-model="summaryType" class="custom-select border border-slate-300 px-3 py-1.5 rounded-lg text-sm font-bold text-slate-700 outline-none bg-white">
+            <select x-show="trackerSubView === 'summary'" x-model="summaryType" class="custom-select border border-slate-300 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold text-slate-700 outline-none">
               <option value="expense">支出統計</option>
               <option value="income">收入統計</option>
             </select>
 
             <!-- 本月小計 -->
-            <div class="text-sm font-semibold flex justify-between sm:justify-start w-full sm:w-auto gap-3 pt-2 sm:pt-0">
+            <div class="text-xs sm:text-sm font-semibold flex gap-3 w-full sm:w-auto justify-end pt-1 sm:pt-0">
               <span class="text-emerald-600"><span x-text="formatYearMonthLabel(selectedYearMonth) + '收入:'"></span> <span class="font-bold" x-text="'+$' + monthlyIncome.toLocaleString()"></span></span>
               <span class="text-rose-500"><span x-text="formatYearMonthLabel(selectedYearMonth) + '支出:'"></span> <span class="font-bold" x-text="'-$' + monthlyExpense.toLocaleString()"></span></span>
             </div>
@@ -176,35 +209,35 @@
         <!-- 視圖 1：交易紀錄清單 -->
         <div x-show="trackerSubView === 'list'" class="divide-y divide-slate-100 w-full">
           <template x-for="item in filteredMonthlyRecords" :key="item.ID || item.id">
-            <div class="py-3 flex justify-between items-center hover:bg-slate-50 px-1 sm:px-2 rounded-lg transition gap-2">
-              <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
+            <div class="py-3 flex justify-between items-center hover:bg-slate-50 px-1 sm:px-2 rounded-lg transition w-full">
+              <div class="flex items-center space-x-2.5 sm:space-x-3 min-w-0 pr-2">
                 
                 <!-- 類別圖示與配色背景 -->
-                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold" :class="getCategoryStyle(item.類別 || item.category).bgClass">
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold shrink-0" :class="getCategoryStyle(item.類別 || item.category).bgClass">
                   <i :class="getCategoryStyle(item.類別 || item.category).icon"></i>
                 </div>
 
-                <div class="min-w-0">
-                  <div class="flex items-center space-x-1.5 sm:space-x-2 flex-wrap">
-                    <span class="font-bold text-slate-800 text-sm sm:text-base truncate" x-text="item.類別 || item.category"></span>
-                    <span class="text-[10px] sm:text-xs px-1.5 py-0.5 rounded text-slate-500 bg-slate-100 flex-shrink-0" x-text="formatDateStr(item.日期 || item.date)"></span>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center space-x-2 flex-wrap">
+                    <span class="font-bold text-xs sm:text-sm text-slate-800 truncate" x-text="item.類別 || item.category"></span>
+                    <span class="text-[10px] sm:text-xs px-1.5 py-0.5 rounded text-slate-500 bg-slate-100 whitespace-nowrap" x-text="formatDateStr(item.日期 || item.date)"></span>
                   </div>
-                  <p class="text-xs text-slate-400 truncate" x-text="item.備註 || item.note || '無備註'"></p>
+                  <p class="text-[11px] sm:text-xs text-slate-400 truncate" x-text="item.備註 || item.note || '無備註'"></p>
                 </div>
               </div>
 
-              <div class="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
-                <span class="font-bold text-sm sm:text-base" :class="isExpense(item) ? 'text-rose-500' : 'text-emerald-600'" x-text="formatAmount(item)"></span>
-                <div class="flex space-x-1 text-slate-400">
-                  <button @click="openEditModal(item)" class="p-1 sm:p-1.5 hover:text-indigo-600 rounded transition"><i class="fa-solid fa-pen"></i></button>
-                  <button @click="deleteRecord(item)" class="p-1 sm:p-1.5 hover:text-rose-600 rounded transition"><i class="fa-solid fa-trash"></i></button>
+              <div class="flex items-center space-x-2 sm:space-x-4 shrink-0">
+                <span class="font-bold text-xs sm:text-base" :class="isExpense(item) ? 'text-rose-500' : 'text-emerald-600'" x-text="formatAmount(item)"></span>
+                <div class="flex space-x-0.5 sm:space-x-1 text-slate-400">
+                  <button @click="openEditModal(item)" class="p-1 sm:p-1.5 hover:text-indigo-600 rounded transition"><i class="fa-solid fa-pen text-xs sm:text-sm"></i></button>
+                  <button @click="deleteRecord(item)" class="p-1 sm:p-1.5 hover:text-rose-600 rounded transition"><i class="fa-solid fa-trash text-xs sm:text-sm"></i></button>
                 </div>
               </div>
             </div>
           </template>
           
           <template x-if="filteredMonthlyRecords.length === 0">
-            <div class="text-center py-8 text-slate-400" x-text="formatYearMonthLabel(selectedYearMonth) + ' 無符合條件的交易紀錄'"></div>
+            <div class="text-center py-8 text-xs sm:text-sm text-slate-400" x-text="formatYearMonthLabel(selectedYearMonth) + ' 無符合條件的交易紀錄'"></div>
           </template>
         </div>
 
@@ -212,34 +245,10 @@
         <div x-show="trackerSubView === 'summary'" class="space-y-4 py-2 w-full">
           <template x-for="cat in categorySummaryList" :key="cat.category">
             <div class="space-y-1 w-full">
-              <div class="flex justify-between items-center text-sm">
+              <div class="flex justify-between items-center text-xs sm:text-sm">
                 <div class="flex items-center space-x-2">
                   <i :class="getCategoryStyle(cat.category).icon + ' ' + getCategoryStyle(cat.category).textClass"></i>
                   <span class="font-bold text-slate-700" x-text="cat.category"></span>
-                </div>
-                <div class="space-x-2">
-                  <span class="text-xs text-slate-400" x-text="cat.percent + '%'"></span>
-                  <span class="font-bold" :class="summaryType === 'expense' ? 'text-rose-500' : 'text-emerald-600'" x-text="'$' + cat.amount.toLocaleString()"></span>
-                </div>
-              </div>
-              <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
-                <div class="h-3 rounded-full transition-all duration-300" 
-                     :class="getCategoryStyle(cat.category).barClass" 
-                     :style="'width: ' + cat.percent + '%'"></div>
-              </div>
-            </div>
-          </template>
-
-          <template x-if="categorySummaryList.length === 0">
-            <div class="text-center py-8 text-slate-400" x-text="formatYearMonthLabel(selectedYearMonth) + ' 尚無此類別紀錄'"></div>
-          </template>
-        </div>
-
-      </div>
-    </div>
-
-  </main>
-
   <!-- 編輯 Modal 彈窗 -->
   <div x-show="showEditModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex justify-center items-center p-4 z-50" x-cloak>
     <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-5 sm:p-6 space-y-4 box-border">
@@ -248,25 +257,31 @@
         <button @click="showEditModal = false" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <form @submit.prevent="updateRecord" class="space-y-3 w-full">
-        <!-- 編輯視圖：日期下拉選單 (年 / 月 / 日) -->
+        <!-- 編輯視圖：日期下拉選單 (年獨佔一行 / 月日一行) -->
         <div class="w-full">
           <label class="block text-xs font-semibold text-slate-500 mb-1">日期</label>
-          <div class="grid grid-cols-3 gap-1.5 w-full">
-            <select x-model="editYear" @change="updateEditDateFromDropdown()" class="custom-select w-full px-2 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-xs sm:text-sm font-medium">
-              <template x-for="y in yearOptions" :key="y">
-                <option :value="y" x-text="y + '年'"></option>
-              </template>
-            </select>
-            <select x-model="editMonth" @change="updateEditDateFromDropdown()" class="custom-select w-full px-2 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-xs sm:text-sm font-medium">
-              <template x-for="m in 12" :key="m">
-                <option :value="String(m).padStart(2, '0')" x-text="m + '月'"></option>
-              </template>
-            </select>
-            <select x-model="editDay" @change="updateEditDateFromDropdown()" class="custom-select w-full px-2 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-xs sm:text-sm font-medium">
-              <template x-for="d in editDaysInMonth" :key="d">
-                <option :value="String(d).padStart(2, '0')" x-text="d + '日'"></option>
-              </template>
-            </select>
+          <div class="grid grid-cols-2 gap-2 w-full">
+            <div class="col-span-2">
+              <select x-model="editYear" @change="updateEditDateFromDropdown()" class="custom-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-medium">
+                <template x-for="y in yearOptions" :key="y">
+                  <option :value="y" x-text="y + '年'"></option>
+                </template>
+              </select>
+            </div>
+            <div class="col-span-1">
+              <select x-model="editMonth" @change="updateEditDateFromDropdown()" class="custom-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-medium">
+                <template x-for="m in 12" :key="m">
+                  <option :value="String(m).padStart(2, '0')" x-text="m + '月'"></option>
+                </template>
+              </select>
+            </div>
+            <div class="col-span-1">
+              <select x-model="editDay" @change="updateEditDateFromDropdown()" class="custom-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-medium">
+                <template x-for="d in editDaysInMonth" :key="d">
+                  <option :value="String(d).padStart(2, '0')" x-text="d + '日'"></option>
+                </template>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -288,18 +303,24 @@
 
   <script>
     function appData() {
-      const now = new Date();
-      const currentYearStr = now.getFullYear().toString();
-      const currentMonthStr = String(now.getMonth() + 1).padStart(2, '0');
-      const currentDayStr = String(now.getDate()).padStart(2, '0');
+      const today = new Date();
+      const currentY = today.getFullYear().toString();
+      const currentM = String(today.getMonth() + 1).padStart(2, '0');
+      const currentD = String(today.getDate()).padStart(2, '0');
 
       return {
         trackerSubView: 'list', // 'list' | 'summary'
         webAppUrl: 'https://script.google.com/macros/s/AKfycbwxyqVeM-LHKa1dIa2JF9H0xF7xCvhyUdpMdeiyk4JIri4y8qqKKFQ-cRuVmuYQ7w5rLQ/exec',
-        selectedYear: currentYearStr,
+        selectedYear: currentY,
         selectedYearMonth: '', // 格式例如: '2026-10'
         searchQuery: '',
         
+        // 預設開啟三段式年月日下拉選單，避開 iOS WebKit 日期欄位過寬爆版的問題
+        useDropdownDate: true,
+        formYear: currentY,
+        formMonth: currentM,
+        formDay: currentD,
+
         incomeCategories: ['薪水', '兼職', '獎金', '紅包', '中獎'],
         expenseCategories: ['飲食', '住家', '交通', '購物', '醫療', '旅遊', 'Pet麻糬', '電信費', '電費', '水費', '瓦斯費', '手續費', '娛樂'],
         
@@ -324,22 +345,14 @@
           '中獎': { icon: 'fa-solid fa-gift', bgClass: 'bg-fuchsia-100 text-fuchsia-600', textClass: 'text-fuchsia-500', barClass: 'bg-fuchsia-500' }
         },
 
-        // 新增紀錄表單資料
-        formYear: currentYearStr,
-        formMonth: currentMonthStr,
-        formDay: currentDayStr,
         form: {
           type: 'expense',
-          date: `${currentYearStr}-${currentMonthStr}-${currentDayStr}`,
+          date: `${currentY}-${currentM}-${currentD}`,
           category: '飲食',
           amount: '',
           note: ''
         },
 
-        // 編輯紀錄 Modal 表單資料
-        editYear: currentYearStr,
-        editMonth: currentMonthStr,
-        editDay: currentDayStr,
         showEditModal: false,
         editForm: { id: '', type: 'expense', date: '', category: '', amount: '', note: '' },
 
@@ -347,52 +360,28 @@
         loading: false,
         summaryType: 'expense',
 
-        // 年份選項 (前後 3 年)
-        get yearOptions() {
-          const cy = new Date().getFullYear();
-          const years = [];
-          for (let y = cy - 3; y <= cy + 3; y++) {
-            years.push(String(y));
-          }
-          return years;
+        initApp() {
+          this.loadDataForYear(this.selectedYear);
         },
 
-        // 計算新增表單當月天數
-        get formDaysInMonth() {
+        get yearOptions() {
+          const nowY = new Date().getFullYear();
+          return [nowY + 1, nowY, nowY - 1, nowY - 2].map(String);
+        },
+
+        get daysInFormMonth() {
           const y = parseInt(this.formYear, 10);
           const m = parseInt(this.formMonth, 10);
           if (!y || !m) return 31;
           return new Date(y, m, 0).getDate();
         },
 
-        // 計算編輯表單當月天數
-        get editDaysInMonth() {
-          const y = parseInt(this.editYear, 10);
-          const m = parseInt(this.editMonth, 10);
-          if (!y || !m) return 31;
-          return new Date(y, m, 0).getDate();
-        },
-
-        initApp() {
-          this.loadDataForYear(this.selectedYear);
-        },
-
-        // 從新增表單下拉更新 form.date
-        updateFormDateFromDropdown() {
-          const maxDays = this.formDaysInMonth;
+        updateFormDateFromDropdowns() {
+          let maxDays = this.daysInFormMonth;
           if (parseInt(this.formDay, 10) > maxDays) {
             this.formDay = String(maxDays).padStart(2, '0');
           }
           this.form.date = `${this.formYear}-${this.formMonth}-${this.formDay}`;
-        },
-
-        // 從編輯表單下拉更新 editForm.date
-        updateEditDateFromDropdown() {
-          const maxDays = this.editDaysInMonth;
-          if (parseInt(this.editDay, 10) > maxDays) {
-            this.editDay = String(maxDays).padStart(2, '0');
-          }
-          this.editForm.date = `${this.editYear}-${this.editMonth}-${this.editDay}`;
         },
 
         getCategoryStyle(category) {
@@ -582,23 +571,13 @@
           this.form.amount = '';
           this.form.note = '';
           this.loading = false;
-          alert('紀錄新增成功！');
         },
 
         openEditModal(item) {
-          const dateStr = this.formatDateStr(item.日期 || item.date);
-          const parts = dateStr.split('-');
-          
-          if (parts.length === 3) {
-            this.editYear = parts[0];
-            this.editMonth = parts[1];
-            this.editDay = parts[2];
-          }
-
           this.editForm = {
             id: item.ID || item.id,
             type: this.isExpense(item) ? 'expense' : 'income',
-            date: dateStr,
+            date: this.formatDateStr(item.日期 || item.date),
             category: item.類別 || item.category,
             amount: Math.abs(Number(item.金額 || item.amount || 0)),
             note: item.備註 || item.note || ''
@@ -632,13 +611,9 @@
 
           this.loading = false;
           this.showEditModal = false;
-          alert('紀錄已成功更新！');
         },
 
         async deleteRecord(item) {
-          if (!confirm('確定要刪除這筆交易紀錄嗎？')) return;
-          this.loading = true;
-
           const targetId = item.ID || item.id;
           this.records = this.records.filter(r => (r.ID || r.id) !== targetId);
 
@@ -652,9 +627,6 @@
           } catch (e) {
             console.error('刪除失敗', e);
           }
-
-          this.loading = false;
-          alert('已成功刪除該筆紀錄！');
         }
       }
     }
