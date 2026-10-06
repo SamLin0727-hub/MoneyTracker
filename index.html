@@ -35,6 +35,22 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen pb-12 overflow-x-hidden relative" x-data="appData()" x-init="initApp()">
 
+  <!-- 全螢幕 Locking Loading 遮罩 -->
+  <div x-show="loading" 
+       x-transition:enter="transition ease-out duration-200"
+       x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100"
+       x-transition:leave="transition ease-in duration-150"
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0"
+       class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm pointer-events-auto select-none"
+       x-cloak>
+    <div class="bg-white/95 px-8 py-6 rounded-2xl shadow-2xl flex flex-col items-center justify-center gap-3 border border-slate-100 min-w-[180px]">
+      <i class="fa-solid fa-circle-notch animate-spin text-emerald-600 text-3xl"></i>
+      <span class="text-slate-700 font-bold text-sm tracking-wide" x-text="loadingText"></span>
+    </div>
+  </div>
+
   <!-- 中央置中 Toast 彈跳視窗訊息 -->
   <div x-show="toast.show" 
        x-transition:enter="transition ease-out duration-300 transform"
@@ -140,9 +156,8 @@
           </div>
 
           <button type="submit" :disabled="loading" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-lg hover:bg-emerald-700 transition flex justify-center items-center gap-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed">
-            <i class="fa-solid fa-spinner animate-spin" x-show="loading"></i>
-            <i class="fa-solid fa-plus" x-show="!loading"></i>
-            <span x-text="loading ? '儲存中...' : '儲存紀錄'"></span>
+            <i class="fa-solid fa-plus"></i>
+            <span>儲存紀錄</span>
           </button>
         </form>
       </div>
@@ -468,8 +483,7 @@
         <div class="flex gap-2 pt-2">
           <button type="button" @click="showEditModal = false" :disabled="loading" class="w-1/2 py-2 border border-slate-300 rounded-lg text-slate-600 font-semibold hover:bg-slate-50 disabled:opacity-50 transition">取消</button>
           <button type="submit" :disabled="loading" class="w-1/2 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-50 transition flex items-center justify-center gap-2">
-            <i class="fa-solid fa-spinner animate-spin" x-show="loading"></i>
-            <span x-text="loading ? '更新中...' : '更新紀錄'"></span>
+            <span>更新紀錄</span>
           </button>
         </div>
       </form>
@@ -543,6 +557,7 @@
 
         records: [],
         loading: false,
+        loadingText: '處理中...',
 
         // Toast 訊息元件控制
         toast: { show: false, message: '', type: 'success' },
@@ -835,12 +850,16 @@
 
         async loadDataForYear(year) {
           this.selectedYear = year;
+          this.loadingText = '資料載入中...';
+          this.loading = true;
           try {
             const res = await fetch(`${this.webAppUrl}?action=getData&year=${year}`);
             const data = await res.json();
             this.records = data.data || [];
           } catch (e) {
             console.error('載入失敗', e);
+          } finally {
+            this.loading = false;
           }
 
           if (this.availableTimeOptions.length > 0) {
@@ -854,6 +873,7 @@
           if (this.loading) return;
           if (!this.form.amount || this.form.amount <= 0) return;
           
+          this.loadingText = '新增儲存中...';
           this.loading = true;
 
           const addedDateYM = this.form.date.substring(0, 7);
@@ -932,6 +952,7 @@
 
         async updateRecord() {
           if (this.loading) return;
+          this.loadingText = '紀錄更新中...';
           this.loading = true;
 
           const idx = this.records.findIndex(r => (r.ID || r.id) === this.editForm.id);
@@ -972,6 +993,7 @@
           if (this.loading) return;
           if (!confirm('確定要刪除這筆交易紀錄嗎？')) return;
 
+          this.loadingText = '紀錄刪除中...';
           this.loading = true;
 
           const targetId = item.ID || item.id;
