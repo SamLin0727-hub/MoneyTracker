@@ -33,7 +33,24 @@
     }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen pb-12 overflow-x-hidden" x-data="appData()" x-init="initApp()">
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-12 overflow-x-hidden relative" x-data="appData()" x-init="initApp()">
+
+  <!-- 中央置中 Toast 彈跳視窗訊息 -->
+  <div x-show="toast.show" 
+       x-transition:enter="transition ease-out duration-300 transform"
+       x-transition:enter-start="opacity-0 scale-90"
+       x-transition:enter-end="opacity-100 scale-100"
+       x-transition:leave="transition ease-in duration-200 transform"
+       x-transition:leave-start="opacity-100 scale-100"
+       x-transition:leave-end="opacity-0 scale-90"
+       class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+       x-cloak>
+    <div class="flex items-center gap-3 px-6 py-3.5 rounded-2xl shadow-2xl text-white font-medium text-base pointer-events-auto backdrop-blur-md"
+         :class="toast.type === 'danger' ? 'bg-rose-600/95 border border-rose-400/30' : (toast.type === 'info' ? 'bg-indigo-600/95 border border-indigo-400/30' : 'bg-emerald-600/95 border border-emerald-400/30')">
+      <i :class="toast.type === 'danger' ? 'fa-solid fa-circle-exclamation text-lg' : (toast.type === 'info' ? 'fa-solid fa-circle-info text-lg' : 'fa-solid fa-circle-check text-lg')"></i>
+      <span x-text="toast.message"></span>
+    </div>
+  </div>
 
   <!-- 頂部導覽列 -->
   <header class="bg-emerald-600 text-white shadow-md">
@@ -72,22 +89,22 @@
             <!-- 日期選擇 -->
             <div class="w-full">
               <label class="block text-xs font-semibold text-slate-500 mb-1">日期</label>
-              <div class="grid grid-cols-2 md:grid-cols-3 gap-2 w-full">
-                <div class="col-span-2 md:col-span-1">
+              <div class="grid grid-cols-3 gap-2 w-full">
+                <div>
                   <select x-model="formYear" @change="updateFormDateFromDropdown()" class="custom-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-medium text-slate-700">
                     <template x-for="y in yearOptions" :key="y">
                       <option :value="y" x-text="y + '年'"></option>
                     </template>
                   </select>
                 </div>
-                <div class="col-span-1">
+                <div>
                   <select x-model="formMonth" @change="updateFormDateFromDropdown()" class="custom-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-medium text-slate-700">
                     <template x-for="m in monthOptions" :key="m">
                       <option :value="m" x-text="parseInt(m, 10) + '月'"></option>
                     </template>
                   </select>
                 </div>
-                <div class="col-span-1">
+                <div>
                   <select x-model="formDay" @change="updateFormDateFromDropdown()" class="custom-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-medium text-slate-700">
                     <template x-for="d in formDaysList" :key="d">
                       <option :value="d" x-text="parseInt(d, 10) + '日'"></option>
@@ -122,7 +139,8 @@
 
           </div>
 
-          <button type="submit" :disabled="loading" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-lg hover:bg-emerald-700 transition flex justify-center items-center gap-2 mt-4">
+          <button type="submit" :disabled="loading" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-lg hover:bg-emerald-700 transition flex justify-center items-center gap-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed">
+            <i class="fa-solid fa-spinner animate-spin" x-show="loading"></i>
             <i class="fa-solid fa-plus" x-show="!loading"></i>
             <span x-text="loading ? '儲存中...' : '儲存紀錄'"></span>
           </button>
@@ -212,8 +230,12 @@
               <div class="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
                 <span class="font-bold text-sm sm:text-base" :class="isExpense(item) ? 'text-rose-500' : 'text-emerald-600'" x-text="formatAmount(item)"></span>
                 <div class="flex space-x-1 text-slate-400">
-                  <button @click="openEditModal(item)" class="p-1 sm:p-1.5 hover:text-indigo-600 rounded transition"><i class="fa-solid fa-pen"></i></button>
-                  <button @click="deleteRecord(item)" class="p-1 sm:p-1.5 hover:text-rose-600 rounded transition"><i class="fa-solid fa-trash"></i></button>
+                  <button @click="openEditModal(item)" :disabled="loading" class="p-1 sm:p-1.5 hover:text-indigo-600 rounded transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-pen"></i>
+                  </button>
+                  <button @click="deleteRecord(item)" :disabled="loading" class="p-1 sm:p-1.5 hover:text-rose-600 rounded transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
                 </div>
               </div>
             </div>
@@ -301,7 +323,7 @@
             </div>
           </div>
 
-          <!-- 模式 2：每月收支總覽 (卡片顯示邏輯優化) -->
+          <!-- 模式 2：每月收支總覽 -->
           <div x-show="timeDimension === 'year' && yearSummaryMode === 'monthly'" class="space-y-4 bg-slate-50/80 p-4 rounded-xl border border-slate-200">
             <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b border-slate-200/60 pb-3">
               <h3 class="text-base font-bold text-slate-700 flex items-center gap-2">
@@ -376,28 +398,42 @@
     <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-5 sm:p-6 space-y-4 box-border">
       <div class="flex justify-between items-center border-b pb-2">
         <h3 class="font-bold text-lg text-slate-700">編輯交易紀錄</h3>
-        <button @click="showEditModal = false" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+        <button @click="showEditModal = false" :disabled="loading" class="text-slate-400 hover:text-slate-600 p-1 disabled:opacity-50"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
-      <form @submit.prevent="updateRecord" class="space-y-3 w-full">
+      <form @submit.prevent="updateRecord" class="space-y-4 w-full">
         
+        <!-- 收支類型切換 -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">收支類型</label>
+          <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl w-full">
+            <button type="button" @click="setEditFormType('expense')" :class="editForm.type === 'expense' ? 'bg-rose-500 text-white font-bold shadow' : 'text-slate-600'" class="py-1.5 rounded-lg text-xs font-semibold transition flex justify-center items-center gap-1.5">
+              <i class="fa-solid fa-arrow-down"></i> 支出
+            </button>
+            <button type="button" @click="setEditFormType('income')" :class="editForm.type === 'income' ? 'bg-emerald-500 text-white font-bold shadow' : 'text-slate-600'" class="py-1.5 rounded-lg text-xs font-semibold transition flex justify-center items-center gap-1.5">
+              <i class="fa-solid fa-arrow-up"></i> 收入
+            </button>
+          </div>
+        </div>
+
+        <!-- 日期選擇 -->
         <div class="w-full">
           <label class="block text-xs font-semibold text-slate-500 mb-1">日期</label>
-          <div class="grid grid-cols-2 md:grid-cols-3 gap-2 w-full">
-            <div class="col-span-2 md:col-span-1">
+          <div class="grid grid-cols-3 gap-2 w-full">
+            <div>
               <select x-model="editYear" @change="updateEditDateFromDropdown()" class="custom-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-medium text-slate-700">
                 <template x-for="y in yearOptions" :key="y">
                   <option :value="y" x-text="y + '年'"></option>
                 </template>
               </select>
             </div>
-            <div class="col-span-1">
+            <div>
               <select x-model="editMonth" @change="updateEditDateFromDropdown()" class="custom-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-medium text-slate-700">
                 <template x-for="m in monthOptions" :key="m">
                   <option :value="m" x-text="parseInt(m, 10) + '月'"></option>
                 </template>
               </select>
             </div>
-            <div class="col-span-1">
+            <div>
               <select x-model="editDay" @change="updateEditDateFromDropdown()" class="custom-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-medium text-slate-700">
                 <template x-for="d in editDaysList" :key="d">
                   <option :value="d" x-text="parseInt(d, 10) + '日'"></option>
@@ -407,17 +443,34 @@
           </div>
         </div>
 
+        <!-- 分類 -->
+        <div class="w-full">
+          <label class="block text-xs font-semibold text-slate-500 mb-1">分類</label>
+          <select x-model="editForm.category" class="custom-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-medium text-slate-700">
+            <template x-for="cat in editCategories" :key="cat">
+              <option :value="cat" x-text="cat"></option>
+            </template>
+          </select>
+        </div>
+
+        <!-- 金額 -->
         <div>
           <label class="block text-xs font-semibold text-slate-500 mb-1">金額 ($)</label>
-          <input type="number" x-model.number="editForm.amount" required min="1" class="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-sm">
+          <input type="number" x-model.number="editForm.amount" required min="1" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-sm">
         </div>
+
+        <!-- 備註 -->
         <div>
           <label class="block text-xs font-semibold text-slate-500 mb-1">備註</label>
-          <input type="text" x-model="editForm.note" class="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-sm">
+          <input type="text" x-model="editForm.note" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-sm">
         </div>
+
         <div class="flex gap-2 pt-2">
-          <button type="button" @click="showEditModal = false" class="w-1/2 py-2 border rounded-lg text-slate-600 font-semibold">取消</button>
-          <button type="submit" :disabled="loading" class="w-1/2 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700">更新紀錄</button>
+          <button type="button" @click="showEditModal = false" :disabled="loading" class="w-1/2 py-2 border border-slate-300 rounded-lg text-slate-600 font-semibold hover:bg-slate-50 disabled:opacity-50 transition">取消</button>
+          <button type="submit" :disabled="loading" class="w-1/2 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-50 transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-spinner animate-spin" x-show="loading"></i>
+            <span x-text="loading ? '更新中...' : '更新紀錄'"></span>
+          </button>
         </div>
       </form>
     </div>
@@ -442,7 +495,7 @@
         searchQuery: '',
         
         incomeCategories: ['薪水', '兼職', '獎金', '紅包', '中獎'],
-        expenseCategories: ['飲食', '住家', '交通', '購物', '醫療', '旅遊', 'Pet麻糬', '電信費', '電費', '水費', '瓦斯費', '手續費', '娛樂'],
+        expenseCategories: ['飲食', '住家', '交通', '購物', '醫療', '旅遊', 'Pet麻糬', '寵物', '電信費', '電費', '水費', '瓦斯費', '手續費', '娛樂'],
         
         categoryStyles: {
           '飲食': { icon: 'fa-solid fa-utensils', bgClass: 'bg-amber-100 text-amber-600', textClass: 'text-amber-500' },
@@ -452,6 +505,7 @@
           '醫療': { icon: 'fa-solid fa-notes-medical', bgClass: 'bg-red-100 text-red-600', textClass: 'text-red-500' },
           '旅遊': { icon: 'fa-solid fa-plane', bgClass: 'bg-sky-100 text-sky-600', textClass: 'text-sky-500' },
           'Pet麻糬': { icon: 'fa-solid fa-carrot', bgClass: 'bg-orange-100 text-orange-600', textClass: 'text-orange-500' },
+          '寵物': { icon: 'fa-solid fa-paw', bgClass: 'bg-orange-100 text-orange-600', textClass: 'text-orange-500' },
           '電信費': { icon: 'fa-solid fa-mobile-screen-button', bgClass: 'bg-cyan-100 text-cyan-600', textClass: 'text-cyan-500' },
           '電費': { icon: 'fa-solid fa-bolt', bgClass: 'bg-yellow-100 text-yellow-600', textClass: 'text-yellow-500' },
           '水費': { icon: 'fa-solid fa-droplet', bgClass: 'bg-teal-100 text-teal-600', textClass: 'text-teal-500' },
@@ -489,6 +543,17 @@
 
         records: [],
         loading: false,
+
+        // Toast 訊息元件控制
+        toast: { show: false, message: '', type: 'success' },
+        showToast(message, type = 'success') {
+          this.toast.message = message;
+          this.toast.type = type;
+          this.toast.show = true;
+          setTimeout(() => {
+            this.toast.show = false;
+          }, 3000);
+        },
 
         initApp() {
           const cy = new Date().getFullYear();
@@ -589,9 +654,21 @@
           return this.form.type === 'expense' ? this.expenseCategories : this.incomeCategories;
         },
 
+        get editCategories() {
+          return this.editForm.type === 'expense' ? this.expenseCategories : this.incomeCategories;
+        },
+
         setFormType(type) {
           this.form.type = type;
           this.form.category = type === 'expense' ? this.expenseCategories[0] : this.incomeCategories[0];
+        },
+
+        setEditFormType(type) {
+          this.editForm.type = type;
+          const cats = type === 'expense' ? this.expenseCategories : this.incomeCategories;
+          if (!cats.includes(this.editForm.category)) {
+            this.editForm.category = cats[0];
+          }
         },
 
         isExpense(item) {
@@ -679,7 +756,6 @@
           this.periodRecords.forEach(r => {
             const cat = r.類別 || r.category || '';
             
-            // 下拉選單為「全部」或是符合選取的類別才統計
             if (this.monthlyFilterCategory !== 'all' && cat !== this.monthlyFilterCategory) {
               return;
             }
@@ -693,10 +769,10 @@
                 
                 if (this.isExpense(r)) {
                   monthMap[m].expense += absAmt;
-                  monthMap[m].total -= absAmt; // 支出累積為負數
+                  monthMap[m].total -= absAmt;
                 } else {
                   monthMap[m].income += absAmt;
-                  monthMap[m].total += absAmt;  // 收入累積為正數
+                  monthMap[m].total += absAmt;
                 }
               }
             }
@@ -775,7 +851,9 @@
         },
 
         async addRecord() {
+          if (this.loading) return;
           if (!this.form.amount || this.form.amount <= 0) return;
+          
           this.loading = true;
 
           const addedDateYM = this.form.date.substring(0, 7);
@@ -813,20 +891,21 @@
           };
 
           try {
-            fetch(this.webAppUrl, {
+            await fetch(this.webAppUrl, {
               method: 'POST',
               mode: 'no-cors',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(newItem)
             });
+            this.showToast('紀錄新增成功！', 'success');
           } catch (e) {
             console.error('寫入 API 失敗', e);
+            this.showToast('寫入失敗，請稍後再試', 'danger');
+          } finally {
+            this.form.amount = '';
+            this.form.note = '';
+            this.loading = false;
           }
-
-          this.form.amount = '';
-          this.form.note = '';
-          this.loading = false;
-          alert('紀錄新增成功！');
         },
 
         openEditModal(item) {
@@ -852,54 +931,66 @@
         },
 
         async updateRecord() {
+          if (this.loading) return;
           this.loading = true;
 
           const idx = this.records.findIndex(r => (r.ID || r.id) === this.editForm.id);
           if (idx !== -1) {
+            const isExp = this.editForm.type === 'expense';
+            const calcAmount = isExp ? -Math.abs(Number(this.editForm.amount)) : Math.abs(Number(this.editForm.amount));
+
             this.records[idx].日期 = this.editForm.date;
             this.records[idx].date = this.editForm.date;
-            this.records[idx].金額 = this.editForm.type === 'expense' ? -Math.abs(Number(this.editForm.amount)) : Math.abs(Number(this.editForm.amount));
-            this.records[idx].amount = this.records[idx].金額;
+            this.records[idx].類型 = this.editForm.type;
+            this.records[idx].type = this.editForm.type;
+            this.records[idx].類別 = this.editForm.category;
+            this.records[idx].category = this.editForm.category;
+            this.records[idx].金額 = calcAmount;
+            this.records[idx].amount = calcAmount;
             this.records[idx].備註 = this.editForm.note;
             this.records[idx].note = this.editForm.note;
           }
 
           try {
-            fetch(this.webAppUrl, {
+            await fetch(this.webAppUrl, {
               method: 'POST',
               mode: 'no-cors',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ action: 'update', ...this.editForm })
             });
+            this.showToast('紀錄已成功更新！', 'info');
           } catch (e) {
             console.error('更新失敗', e);
+            this.showToast('更新失敗，請稍後再試', 'danger');
+          } finally {
+            this.loading = false;
+            this.showEditModal = false;
           }
-
-          this.loading = false;
-          this.showEditModal = false;
-          alert('紀錄已成功更新！');
         },
 
         async deleteRecord(item) {
+          if (this.loading) return;
           if (!confirm('確定要刪除這筆交易紀錄嗎？')) return;
+
           this.loading = true;
 
           const targetId = item.ID || item.id;
           this.records = this.records.filter(r => (r.ID || r.id) !== targetId);
 
           try {
-            fetch(this.webAppUrl, {
+            await fetch(this.webAppUrl, {
               method: 'POST',
               mode: 'no-cors',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ action: 'delete', id: targetId, date: item.日期 || item.date })
             });
+            this.showToast('已成功刪除該筆紀錄！', 'danger');
           } catch (e) {
             console.error('刪除失敗', e);
+            this.showToast('刪除失敗，請稍後再試', 'danger');
+          } finally {
+            this.loading = false;
           }
-
-          this.loading = false;
-          alert('已成功刪除該筆紀錄！');
         }
       }
     }
