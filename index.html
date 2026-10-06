@@ -170,14 +170,20 @@
             </div>
           </div>
 
-          <div class="flex flex-wrap items-center gap-4 w-full lg:w-auto justify-between lg:justify-end">
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
             <!-- 搜尋框 (僅在清單視圖顯示) -->
             <input x-show="trackerSubView === 'list'" type="text" x-model="searchQuery" placeholder="搜尋備註/類別..." class="w-full sm:w-auto px-3 py-1.5 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500">
 
-            <!-- 小計 -->
-            <div class="text-sm font-semibold flex justify-between sm:justify-start w-full sm:w-auto gap-3 pt-2 sm:pt-0 whitespace-nowrap">
-              <span class="text-emerald-600"><span x-text="formatPeriodLabel(selectedTimePeriod) + '收入:'"></span> <span class="font-bold" x-text="'+$' + periodIncome.toLocaleString()"></span></span>
-              <span class="text-rose-500"><span x-text="formatPeriodLabel(selectedTimePeriod) + '支出:'"></span> <span class="font-bold" x-text="'-$' + periodExpense.toLocaleString()"></span></span>
+            <!-- 小計：手機版分兩行 (flex-col)，電腦版橫向並排 (sm:flex-row) -->
+            <div class="text-sm font-semibold flex flex-col sm:flex-row justify-between sm:justify-start w-full sm:w-auto gap-1 sm:gap-3 pt-2 sm:pt-0 whitespace-nowrap">
+              <div class="flex justify-between sm:justify-start gap-1">
+                <span class="text-emerald-600" x-text="formatPeriodLabel(selectedTimePeriod) + '收入:'"></span>
+                <span class="font-bold text-emerald-600" x-text="'+$' + periodIncome.toLocaleString()"></span>
+              </div>
+              <div class="flex justify-between sm:justify-start gap-1">
+                <span class="text-rose-500" x-text="formatPeriodLabel(selectedTimePeriod) + '支出:'"></span>
+                <span class="font-bold text-rose-500" x-text="'-$' + periodExpense.toLocaleString()"></span>
+              </div>
             </div>
           </div>
         </div>
