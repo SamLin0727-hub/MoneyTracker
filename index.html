@@ -13,12 +13,10 @@
   <style>
     [x-cloak] { display: none !important; }
     
-    /* 核心防爆版與盒模型重置 */
     *, ::before, ::after {
       box-sizing: border-box !important;
     }
 
-    /* 防止 iOS Safari 在 focus 時自動放大頁面，統一基礎字級 */
     input, select, button {
       font-size: 16px !important;
       -webkit-appearance: none;
@@ -26,7 +24,6 @@
       appearance: none;
     }
 
-    /* 客製化 select 下拉箭頭 */
     .custom-select {
       background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2064748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
       background-repeat: no-repeat;
@@ -70,14 +67,12 @@
             </div>
           </div>
 
-          <!-- 響應式佈局結構 -->
           <div class="space-y-4 w-full">
             
-            <!-- 第一排：日期 (大螢幕獨佔一行並排；小螢幕年一行、月日並列一行) -->
+            <!-- 日期選擇 -->
             <div class="w-full">
               <label class="block text-xs font-semibold text-slate-500 mb-1">日期</label>
               <div class="grid grid-cols-2 md:grid-cols-3 gap-2 w-full">
-                <!-- 年 (手機版佔滿上一行；電腦版佔1/3) -->
                 <div class="col-span-2 md:col-span-1">
                   <select x-model="formYear" @change="updateFormDateFromDropdown()" class="custom-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-medium text-slate-700">
                     <template x-for="y in yearOptions" :key="y">
@@ -85,7 +80,6 @@
                     </template>
                   </select>
                 </div>
-                <!-- 月 -->
                 <div class="col-span-1">
                   <select x-model="formMonth" @change="updateFormDateFromDropdown()" class="custom-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-medium text-slate-700">
                     <template x-for="m in monthOptions" :key="m">
@@ -93,7 +87,6 @@
                     </template>
                   </select>
                 </div>
-                <!-- 日 -->
                 <div class="col-span-1">
                   <select x-model="formDay" @change="updateFormDateFromDropdown()" class="custom-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-medium text-slate-700">
                     <template x-for="d in formDaysList" :key="d">
@@ -104,9 +97,8 @@
               </div>
             </div>
 
-            <!-- 第二排：分類 與 金額 (大螢幕併排一行；手機版各自獨立一行) -->
+            <!-- 分類 與 金額 -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-              <!-- 分類 -->
               <div class="w-full">
                 <label class="block text-xs font-semibold text-slate-500 mb-1">分類</label>
                 <select x-model="form.category" class="custom-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-medium text-slate-700">
@@ -116,14 +108,13 @@
                 </select>
               </div>
 
-              <!-- 金額 -->
               <div class="w-full">
                 <label class="block text-xs font-semibold text-slate-500 mb-1">金額 ($)</label>
                 <input type="number" x-model.number="form.amount" required min="1" placeholder="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm">
               </div>
             </div>
 
-            <!-- 第三排：備註 (大螢幕與手機版均獨佔一行) -->
+            <!-- 備註 -->
             <div class="w-full">
               <label class="block text-xs font-semibold text-slate-500 mb-1">備註</label>
               <input type="text" x-model="form.note" placeholder="例如：薪水、午餐" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm">
@@ -138,59 +129,65 @@
         </form>
       </div>
 
-      <!-- 紀錄展示區（切換：交易紀錄清單 / 類別加總統計） -->
+      <!-- 紀錄展示區 -->
       <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 w-full box-border overflow-hidden">
         
-        <!-- 上方工具列：子視圖切換 + 年月動態選擇 + 統計資訊 -->
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-4 border-b border-slate-100 w-full">
+        <!-- 上方工具列 -->
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6 pb-4 border-b border-slate-100 w-full">
           
-          <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
-            <!-- 切換按鈕 (Segmented Control) -->
-            <div class="bg-slate-100 p-1 rounded-xl flex items-center space-x-1 w-full sm:w-auto">
-              <button @click="trackerSubView = 'list'" :class="trackerSubView === 'list' ? 'bg-white text-emerald-600 font-bold shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-sm transition flex items-center justify-center gap-2">
+          <div class="flex flex-col md:flex-row items-stretch md:items-center gap-3 w-full lg:w-auto shrink-0">
+            <!-- 1. 切換按鈕 (交易紀錄清單 / 類別統計加總) -->
+            <div class="bg-slate-100 p-1 rounded-xl flex items-center space-x-1 w-full md:w-auto shrink-0">
+              <button @click="trackerSubView = 'list'" :class="trackerSubView === 'list' ? 'bg-white text-emerald-600 font-bold shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 md:flex-none px-3.5 py-1.5 rounded-lg text-sm transition flex items-center justify-center gap-2 whitespace-nowrap">
                 <i class="fa-solid fa-list"></i> 交易紀錄清單
               </button>
-              <button @click="trackerSubView = 'summary'" :class="trackerSubView === 'summary' ? 'bg-white text-emerald-600 font-bold shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-sm transition flex items-center justify-center gap-2">
+              <button @click="trackerSubView = 'summary'" :class="trackerSubView === 'summary' ? 'bg-white text-emerald-600 font-bold shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 md:flex-none px-3.5 py-1.5 rounded-lg text-sm transition flex items-center justify-center gap-2 whitespace-nowrap">
                 <i class="fa-solid fa-chart-bar"></i> 類別統計加總
               </button>
             </div>
 
-            <!-- 動態年月下拉選單 -->
-            <div class="flex items-center space-x-1 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 w-full sm:w-auto justify-between sm:justify-start">
-              <span class="text-xs font-semibold text-slate-500">月份：</span>
-              <select x-model="selectedYearMonth" class="custom-select bg-transparent font-bold text-emerald-700 text-sm outline-none cursor-pointer pr-6">
-                <template x-for="ym in availableYearMonths" :key="ym">
-                  <option :value="ym" x-text="formatYearMonthLabel(ym)"></option>
-                </template>
-              </select>
+            <!-- 時間選擇控制區 (包含 月/年 切換與下拉選單) -->
+            <div class="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto shrink-0">
+              <!-- 2. 月 / 年 切換按鈕 (小版型在上；大螢幕在左側) -->
+              <div class="bg-slate-100 p-1 rounded-xl flex items-center space-x-1 w-full md:w-auto shrink-0">
+                <button @click="switchTimeDimension('month')" :class="timeDimension === 'month' ? 'bg-emerald-600 text-white font-bold shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 md:flex-none px-3 py-1.5 text-center rounded-lg text-xs transition whitespace-nowrap">
+                  月
+                </button>
+                <button @click="switchTimeDimension('year')" :class="timeDimension === 'year' ? 'bg-emerald-600 text-white font-bold shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 md:flex-none px-3 py-1.5 text-center rounded-lg text-xs transition whitespace-nowrap">
+                  年
+                </button>
+              </div>
+
+              <!-- 3. 月份/年份 下拉選單 (小版型在下；大螢幕在右側) -->
+              <div class="flex items-center space-x-1 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 w-full md:w-auto justify-between md:justify-start shrink-0">
+                <span class="text-xs font-semibold text-slate-500 whitespace-nowrap shrink-0" x-text="timeDimension === 'month' ? '月份：' : '年份：'"></span>
+                <select x-model="selectedTimePeriod" @change="onPeriodDropdownChange" class="custom-select bg-transparent font-bold text-emerald-700 text-sm outline-none cursor-pointer pr-6 whitespace-nowrap">
+                  <template x-for="timeItem in availableTimeOptions" :key="timeItem">
+                    <option :value="timeItem" x-text="formatPeriodLabel(timeItem)"></option>
+                  </template>
+                </select>
+              </div>
             </div>
           </div>
 
-          <div class="flex flex-wrap items-center gap-4 w-full md:w-auto justify-between md:justify-end">
+          <div class="flex flex-wrap items-center gap-4 w-full lg:w-auto justify-between lg:justify-end">
             <!-- 搜尋框 (僅在清單視圖顯示) -->
             <input x-show="trackerSubView === 'list'" type="text" x-model="searchQuery" placeholder="搜尋備註/類別..." class="w-full sm:w-auto px-3 py-1.5 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500">
 
-            <!-- 類別統計收支切換 (僅在統計視圖顯示) -->
-            <select x-show="trackerSubView === 'summary'" x-model="summaryType" class="custom-select border border-slate-300 px-3 py-1.5 rounded-lg text-sm font-bold text-slate-700 outline-none bg-white">
-              <option value="expense">支出統計</option>
-              <option value="income">收入統計</option>
-            </select>
-
-            <!-- 本月小計 -->
-            <div class="text-sm font-semibold flex justify-between sm:justify-start w-full sm:w-auto gap-3 pt-2 sm:pt-0">
-              <span class="text-emerald-600"><span x-text="formatYearMonthLabel(selectedYearMonth) + '收入:'"></span> <span class="font-bold" x-text="'+$' + monthlyIncome.toLocaleString()"></span></span>
-              <span class="text-rose-500"><span x-text="formatYearMonthLabel(selectedYearMonth) + '支出:'"></span> <span class="font-bold" x-text="'-$' + monthlyExpense.toLocaleString()"></span></span>
+            <!-- 小計 -->
+            <div class="text-sm font-semibold flex justify-between sm:justify-start w-full sm:w-auto gap-3 pt-2 sm:pt-0 whitespace-nowrap">
+              <span class="text-emerald-600"><span x-text="formatPeriodLabel(selectedTimePeriod) + '收入:'"></span> <span class="font-bold" x-text="'+$' + periodIncome.toLocaleString()"></span></span>
+              <span class="text-rose-500"><span x-text="formatPeriodLabel(selectedTimePeriod) + '支出:'"></span> <span class="font-bold" x-text="'-$' + periodExpense.toLocaleString()"></span></span>
             </div>
           </div>
         </div>
 
         <!-- 視圖 1：交易紀錄清單 -->
         <div x-show="trackerSubView === 'list'" class="divide-y divide-slate-100 w-full">
-          <template x-for="item in filteredMonthlyRecords" :key="item.ID || item.id">
+          <template x-for="item in filteredPeriodRecords" :key="item.ID || item.id">
             <div class="py-3 flex justify-between items-center hover:bg-slate-50 px-1 sm:px-2 rounded-lg transition gap-2">
               <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
                 
-                <!-- 類別圖示與配色背景 -->
                 <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold" :class="getCategoryStyle(item.類別 || item.category).bgClass">
                   <i :class="getCategoryStyle(item.類別 || item.category).icon"></i>
                 </div>
@@ -214,36 +211,74 @@
             </div>
           </template>
           
-          <template x-if="filteredMonthlyRecords.length === 0">
-            <div class="text-center py-8 text-slate-400" x-text="formatYearMonthLabel(selectedYearMonth) + ' 無符合條件的交易紀錄'"></div>
+          <template x-if="filteredPeriodRecords.length === 0">
+            <div class="text-center py-8 text-slate-400" x-text="formatPeriodLabel(selectedTimePeriod) + ' 無符合條件的交易紀錄'"></div>
           </template>
         </div>
 
-        <!-- 視圖 2：類別加總統計 -->
-        <div x-show="trackerSubView === 'summary'" class="space-y-4 py-2 w-full">
-          <template x-for="cat in categorySummaryList" :key="cat.category">
-            <div class="space-y-1 w-full">
-              <div class="flex justify-between items-center text-sm">
-                <div class="flex items-center space-x-2">
-                  <i :class="getCategoryStyle(cat.category).icon + ' ' + getCategoryStyle(cat.category).textClass"></i>
-                  <span class="font-bold text-slate-700" x-text="cat.category"></span>
-                </div>
-                <div class="space-x-2">
-                  <span class="text-xs text-slate-400" x-text="cat.percent + '%'"></span>
-                  <span class="font-bold" :class="summaryType === 'expense' ? 'text-rose-500' : 'text-emerald-600'" x-text="'$' + cat.amount.toLocaleString()"></span>
-                </div>
-              </div>
-              <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
-                <div class="h-3 rounded-full transition-all duration-300" 
-                     :class="getCategoryStyle(cat.category).barClass" 
-                     :style="'width: ' + cat.percent + '%'"></div>
-              </div>
-            </div>
-          </template>
+        <!-- 視圖 2：類別加總統計（上方收入，下方支出，全部呈現） -->
+        <div x-show="trackerSubView === 'summary'" class="space-y-8 py-2 w-full">
+          
+          <!-- 上方：收入統計 -->
+          <div class="space-y-4 bg-emerald-50/40 p-4 rounded-xl border border-emerald-100">
+            <h3 class="text-base font-bold text-emerald-700 flex items-center gap-2">
+              <i class="fa-solid fa-arrow-up text-emerald-600"></i> 收入統計加總
+            </h3>
 
-          <template x-if="categorySummaryList.length === 0">
-            <div class="text-center py-8 text-slate-400" x-text="formatYearMonthLabel(selectedYearMonth) + ' 尚無此類別紀錄'"></div>
-          </template>
+            <template x-for="cat in incomeCategorySummaryList" :key="cat.category">
+              <div class="space-y-1 w-full">
+                <div class="flex justify-between items-center text-sm">
+                  <div class="flex items-center space-x-2">
+                    <i :class="getCategoryStyle(cat.category).icon + ' ' + getCategoryStyle(cat.category).textClass"></i>
+                    <span class="font-bold text-slate-700" x-text="cat.category"></span>
+                  </div>
+                  <div class="space-x-2">
+                    <span class="text-xs text-slate-400" x-text="cat.percent + '%'"></span>
+                    <span class="font-bold text-emerald-600" x-text="'+$' + cat.amount.toLocaleString()"></span>
+                  </div>
+                </div>
+                <div class="w-full bg-emerald-100/60 rounded-full h-3 overflow-hidden">
+                  <div class="h-3 rounded-full bg-emerald-500 transition-all duration-300" 
+                       :style="'width: ' + cat.percent + '%'"></div>
+                </div>
+              </div>
+            </template>
+
+            <template x-if="incomeCategorySummaryList.length === 0">
+              <div class="text-center py-4 text-slate-400 text-sm" x-text="formatPeriodLabel(selectedTimePeriod) + ' 尚無收入紀錄'"></div>
+            </template>
+          </div>
+
+          <!-- 下方：支出統計 -->
+          <div class="space-y-4 bg-rose-50/40 p-4 rounded-xl border border-rose-100">
+            <h3 class="text-base font-bold text-rose-700 flex items-center gap-2">
+              <i class="fa-solid fa-arrow-down text-rose-600"></i> 支出統計加總
+            </h3>
+
+            <template x-for="cat in expenseCategorySummaryList" :key="cat.category">
+              <div class="space-y-1 w-full">
+                <div class="flex justify-between items-center text-sm">
+                  <div class="flex items-center space-x-2">
+                    <i :class="getCategoryStyle(cat.category).icon + ' ' + getCategoryStyle(cat.category).textClass"></i>
+                    <span class="font-bold text-slate-700" x-text="cat.category"></span>
+                  </div>
+                  <div class="space-x-2">
+                    <span class="text-xs text-slate-400" x-text="cat.percent + '%'"></span>
+                    <span class="font-bold text-rose-500" x-text="'-$' + cat.amount.toLocaleString()"></span>
+                  </div>
+                </div>
+                <div class="w-full bg-rose-100/60 rounded-full h-3 overflow-hidden">
+                  <div class="h-3 rounded-full bg-rose-500 transition-all duration-300" 
+                       :style="'width: ' + cat.percent + '%'"></div>
+                </div>
+              </div>
+            </template>
+
+            <template x-if="expenseCategorySummaryList.length === 0">
+              <div class="text-center py-4 text-slate-400 text-sm" x-text="formatPeriodLabel(selectedTimePeriod) + ' 尚無支出紀錄'"></div>
+            </template>
+          </div>
+
         </div>
 
       </div>
@@ -260,7 +295,6 @@
       </div>
       <form @submit.prevent="updateRecord" class="space-y-3 w-full">
         
-        <!-- 編輯視圖：日期下拉選單 (響應式排版) -->
         <div class="w-full">
           <label class="block text-xs font-semibold text-slate-500 mb-1">日期</label>
           <div class="grid grid-cols-2 md:grid-cols-3 gap-2 w-full">
@@ -313,42 +347,42 @@
 
       return {
         trackerSubView: 'list', // 'list' | 'summary'
+        timeDimension: 'month',  // 'month' | 'year'
+        selectedTimePeriod: `${currentYearStr}-${currentMonthStr}`,
+        
         webAppUrl: 'https://script.google.com/macros/s/AKfycbwxyqVeM-LHKa1dIa2JF9H0xF7xCvhyUdpMdeiyk4JIri4y8qqKKFQ-cRuVmuYQ7w5rLQ/exec',
         selectedYear: currentYearStr,
-        selectedYearMonth: '', // 格式例如: '2026-10'
         searchQuery: '',
         
         incomeCategories: ['薪水', '兼職', '獎金', '紅包', '中獎'],
         expenseCategories: ['飲食', '住家', '交通', '購物', '醫療', '旅遊', 'Pet麻糬', '電信費', '電費', '水費', '瓦斯費', '手續費', '娛樂'],
         
         categoryStyles: {
-          '飲食': { icon: 'fa-solid fa-utensils', bgClass: 'bg-amber-100 text-amber-600', textClass: 'text-amber-500', barClass: 'bg-amber-500' },
-          '住家': { icon: 'fa-solid fa-house', bgClass: 'bg-indigo-100 text-indigo-600', textClass: 'text-indigo-500', barClass: 'bg-indigo-500' },
-          '交通': { icon: 'fa-solid fa-car', bgClass: 'bg-blue-100 text-blue-600', textClass: 'text-blue-500', barClass: 'bg-blue-500' },
-          '購物': { icon: 'fa-solid fa-bag-shopping', bgClass: 'bg-pink-100 text-pink-600', textClass: 'text-pink-500', barClass: 'bg-pink-500' },
-          '醫療': { icon: 'fa-solid fa-notes-medical', bgClass: 'bg-red-100 text-red-600', textClass: 'text-red-500', barClass: 'bg-red-500' },
-          '旅遊': { icon: 'fa-solid fa-plane', bgClass: 'bg-sky-100 text-sky-600', textClass: 'text-sky-500', barClass: 'bg-sky-500' },
-          'Pet麻糬': { icon: 'fa-solid fa-carrot', bgClass: 'bg-orange-100 text-orange-600', textClass: 'text-orange-500', barClass: 'bg-orange-500' },
-          '電信費': { icon: 'fa-solid fa-mobile-screen-button', bgClass: 'bg-cyan-100 text-cyan-600', textClass: 'text-cyan-500', barClass: 'bg-cyan-500' },
-          '電費': { icon: 'fa-solid fa-bolt', bgClass: 'bg-yellow-100 text-yellow-600', textClass: 'text-yellow-500', barClass: 'bg-yellow-500' },
-          '水費': { icon: 'fa-solid fa-droplet', bgClass: 'bg-teal-100 text-teal-600', textClass: 'text-teal-500', barClass: 'bg-teal-500' },
-          '瓦斯費': { icon: 'fa-solid fa-fire', bgClass: 'bg-rose-100 text-rose-600', textClass: 'text-rose-500', barClass: 'bg-rose-500' },
-          '手續費': { icon: 'fa-solid fa-receipt', bgClass: 'bg-slate-200 text-slate-700', textClass: 'text-slate-600', barClass: 'bg-slate-500' },
-          '娛樂': { icon: 'fa-solid fa-gamepad', bgClass: 'bg-purple-100 text-purple-600', textClass: 'text-purple-500', barClass: 'bg-purple-500' },
-          '薪水': { icon: 'fa-solid fa-money-bill-wave', bgClass: 'bg-emerald-100 text-emerald-600', textClass: 'text-emerald-500', barClass: 'bg-emerald-500' },
-          '兼職': { icon: 'fa-solid fa-briefcase', bgClass: 'bg-green-100 text-green-600', textClass: 'text-green-500', barClass: 'bg-green-500' },
-          '獎金': { icon: 'fa-solid fa-trophy', bgClass: 'bg-yellow-100 text-yellow-600', textClass: 'text-yellow-500', barClass: 'bg-yellow-500' },
-          '紅包': { icon: 'fa-solid fa-envelope-open-text', bgClass: 'bg-red-100 text-red-600', textClass: 'text-red-500', barClass: 'bg-red-500' },
-          '中獎': { icon: 'fa-solid fa-gift', bgClass: 'bg-fuchsia-100 text-fuchsia-600', textClass: 'text-fuchsia-500', barClass: 'bg-fuchsia-500' }
+          '飲食': { icon: 'fa-solid fa-utensils', bgClass: 'bg-amber-100 text-amber-600', textClass: 'text-amber-500' },
+          '住家': { icon: 'fa-solid fa-house', bgClass: 'bg-indigo-100 text-indigo-600', textClass: 'text-indigo-500' },
+          '交通': { icon: 'fa-solid fa-car', bgClass: 'bg-blue-100 text-blue-600', textClass: 'text-blue-500' },
+          '購物': { icon: 'fa-solid fa-bag-shopping', bgClass: 'bg-pink-100 text-pink-600', textClass: 'text-pink-500' },
+          '醫療': { icon: 'fa-solid fa-notes-medical', bgClass: 'bg-red-100 text-red-600', textClass: 'text-red-500' },
+          '旅遊': { icon: 'fa-solid fa-plane', bgClass: 'bg-sky-100 text-sky-600', textClass: 'text-sky-500' },
+          'Pet麻糬': { icon: 'fa-solid fa-carrot', bgClass: 'bg-orange-100 text-orange-600', textClass: 'text-orange-500' },
+          '電信費': { icon: 'fa-solid fa-mobile-screen-button', bgClass: 'bg-cyan-100 text-cyan-600', textClass: 'text-cyan-500' },
+          '電費': { icon: 'fa-solid fa-bolt', bgClass: 'bg-yellow-100 text-yellow-600', textClass: 'text-yellow-500' },
+          '水費': { icon: 'fa-solid fa-droplet', bgClass: 'bg-teal-100 text-teal-600', textClass: 'text-teal-500' },
+          '瓦斯費': { icon: 'fa-solid fa-fire', bgClass: 'bg-rose-100 text-rose-600', textClass: 'text-rose-500' },
+          '手續費': { icon: 'fa-solid fa-receipt', bgClass: 'bg-slate-200 text-slate-700', textClass: 'text-slate-600' },
+          '娛樂': { icon: 'fa-solid fa-gamepad', bgClass: 'bg-purple-100 text-purple-600', textClass: 'text-purple-500' },
+          '薪水': { icon: 'fa-solid fa-money-bill-wave', bgClass: 'bg-emerald-100 text-emerald-600', textClass: 'text-emerald-500' },
+          '兼職': { icon: 'fa-solid fa-briefcase', bgClass: 'bg-green-100 text-green-600', textClass: 'text-green-500' },
+          '獎金': { icon: 'fa-solid fa-trophy', bgClass: 'bg-yellow-100 text-yellow-600', textClass: 'text-yellow-500' },
+          '紅包': { icon: 'fa-solid fa-envelope-open-text', bgClass: 'bg-red-100 text-red-600', textClass: 'text-red-500' },
+          '中獎': { icon: 'fa-solid fa-gift', bgClass: 'bg-fuchsia-100 text-fuchsia-600', textClass: 'text-fuchsia-500' }
         },
 
-        // 下拉選單基礎選項 array
         yearOptions: [],
         monthOptions: ['01','02','03','04','05','06','07','08','09','10','11','12'],
         formDaysList: [],
         editDaysList: [],
 
-        // 新增紀錄表單資料
         formYear: currentYearStr,
         formMonth: currentMonthStr,
         formDay: currentDayStr,
@@ -360,7 +394,6 @@
           note: ''
         },
 
-        // 編輯紀錄 Modal 表單資料
         editYear: currentYearStr,
         editMonth: currentMonthStr,
         editDay: currentDayStr,
@@ -369,10 +402,8 @@
 
         records: [],
         loading: false,
-        summaryType: 'expense',
 
         initApp() {
-          // 初始化年份陣列 (前後 3 年)
           const cy = new Date().getFullYear();
           const years = [];
           for (let y = cy - 3; y <= cy + 3; y++) {
@@ -380,14 +411,26 @@
           }
           this.yearOptions = years;
 
-          // 初始化天數陣列
           this.rebuildFormDays();
           this.rebuildEditDays();
 
           this.loadDataForYear(this.selectedYear);
         },
 
-        // 動態計算新增表單當月天數選項
+        switchTimeDimension(dim) {
+          this.timeDimension = dim;
+          if (this.availableTimeOptions.length > 0) {
+            this.selectedTimePeriod = this.availableTimeOptions[0];
+          }
+        },
+
+        onPeriodDropdownChange() {
+          const targetYear = this.selectedTimePeriod.substring(0, 4);
+          if (targetYear !== this.selectedYear) {
+            this.loadDataForYear(targetYear);
+          }
+        },
+
         rebuildFormDays() {
           const y = parseInt(this.formYear, 10);
           const m = parseInt(this.formMonth, 10);
@@ -399,13 +442,11 @@
           }
           this.formDaysList = days;
 
-          // 防護超出天數
           if (parseInt(this.formDay, 10) > totalDays) {
             this.formDay = String(totalDays).padStart(2, '0');
           }
         },
 
-        // 動態計算編輯表單當月天數選項
         rebuildEditDays() {
           const y = parseInt(this.editYear, 10);
           const m = parseInt(this.editMonth, 10);
@@ -417,19 +458,16 @@
           }
           this.editDaysList = days;
 
-          // 防護超出天數
           if (parseInt(this.editDay, 10) > totalDays) {
             this.editDay = String(totalDays).padStart(2, '0');
           }
         },
 
-        // 從新增表單下拉更新 form.date
         updateFormDateFromDropdown() {
           this.rebuildFormDays();
           this.form.date = `${this.formYear}-${this.formMonth}-${this.formDay}`;
         },
 
-        // 從編輯表單下拉更新 editForm.date
         updateEditDateFromDropdown() {
           this.rebuildEditDays();
           this.editForm.date = `${this.editYear}-${this.editMonth}-${this.editDay}`;
@@ -439,8 +477,7 @@
           return this.categoryStyles[category] || {
             icon: 'fa-solid fa-tags',
             bgClass: 'bg-slate-100 text-slate-600',
-            textClass: 'text-slate-500',
-            barClass: 'bg-slate-500'
+            textClass: 'text-slate-500'
           };
         },
 
@@ -453,11 +490,12 @@
           return cleanStr.substring(0, 10);
         },
 
-        formatYearMonthLabel(ymStr) {
-          if (!ymStr) return '';
-          const parts = ymStr.split('-');
-          if (parts.length < 2) return ymStr;
-          return `${parts[0]}年${parseInt(parts[1], 10)}月`;
+        formatPeriodLabel(periodStr) {
+          if (!periodStr) return '';
+          const parts = periodStr.split('-');
+          if (parts.length === 1) return `${parts[0]}年`;
+          if (parts.length === 2) return `${parts[0]}年${parseInt(parts[1], 10)}月`;
+          return periodStr;
         },
 
         get currentCategories() {
@@ -480,30 +518,38 @@
           return (this.isExpense(item) ? '-$' : '+$') + amt.toLocaleString();
         },
 
-        get availableYearMonths() {
-          const ymSet = new Set();
+        get availableTimeOptions() {
+          const set = new Set();
           this.records.forEach(r => {
             const dateStr = this.formatDateStr(r.日期 || r.date);
-            if (dateStr && dateStr.length >= 7) {
-              ymSet.add(dateStr.substring(0, 7));
+            if (dateStr && dateStr.length >= 4) {
+              if (this.timeDimension === 'year') {
+                set.add(dateStr.substring(0, 4));
+              } else {
+                if (dateStr.length >= 7) {
+                  set.add(dateStr.substring(0, 7));
+                }
+              }
             }
           });
 
-          if (ymSet.size === 0) {
+          if (set.size === 0) {
             const now = new Date();
-            const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-            ymSet.add(currentYM);
+            const currentStr = this.timeDimension === 'year' 
+              ? `${now.getFullYear()}` 
+              : `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            set.add(currentStr);
           }
 
-          return Array.from(ymSet).sort((a, b) => b.localeCompare(a));
+          return Array.from(set).sort((a, b) => b.localeCompare(a));
         },
 
-        get monthlyRecords() {
-          if (!this.selectedYearMonth) return [];
+        get periodRecords() {
+          if (!this.selectedTimePeriod) return [];
 
           return this.records.filter(r => {
             const dateStr = this.formatDateStr(r.日期 || r.date);
-            return dateStr.startsWith(this.selectedYearMonth);
+            return dateStr.startsWith(this.selectedTimePeriod);
           }).sort((a, b) => {
             const dateA = this.formatDateStr(a.日期 || a.date);
             const dateB = this.formatDateStr(b.日期 || b.date);
@@ -514,34 +560,54 @@
           });
         },
 
-        get filteredMonthlyRecords() {
-          if (!this.searchQuery) return this.monthlyRecords;
+        get filteredPeriodRecords() {
+          if (!this.searchQuery) return this.periodRecords;
           const q = this.searchQuery.toLowerCase();
-          return this.monthlyRecords.filter(r => 
+          return this.periodRecords.filter(r => 
             (r.類別 || r.category || '').toLowerCase().includes(q) ||
             (r.備註 || r.note || '').toLowerCase().includes(q)
           );
         },
 
-        get monthlyIncome() {
-          return this.monthlyRecords
+        get periodIncome() {
+          return this.periodRecords
             .filter(r => !this.isExpense(r))
             .reduce((sum, r) => sum + Math.abs(Number(r.金額 || r.amount || 0)), 0);
         },
 
-        get monthlyExpense() {
-          return this.monthlyRecords
+        get periodExpense() {
+          return this.periodRecords
             .filter(r => this.isExpense(r))
             .reduce((sum, r) => sum + Math.abs(Number(r.金額 || r.amount || 0)), 0);
         },
 
-        get categorySummaryList() {
-          const isExp = this.summaryType === 'expense';
-          const totalSum = isExp ? this.monthlyExpense : this.monthlyIncome;
+        get incomeCategorySummaryList() {
+          const totalSum = this.periodIncome;
           const map = {};
 
-          this.monthlyRecords.forEach(r => {
-            if (this.isExpense(r) === isExp) {
+          this.periodRecords.forEach(r => {
+            if (!this.isExpense(r)) {
+              const cat = r.類別 || r.category || '未分類';
+              const amt = Math.abs(Number(r.金額 || r.amount || 0));
+              map[cat] = (map[cat] || 0) + amt;
+            }
+          });
+
+          return Object.keys(map)
+            .map(cat => {
+              const amt = map[cat];
+              const pct = totalSum > 0 ? ((amt / totalSum) * 100).toFixed(1) : 0;
+              return { category: cat, amount: amt, percent: pct };
+            })
+            .sort((a, b) => b.amount - a.amount);
+        },
+
+        get expenseCategorySummaryList() {
+          const totalSum = this.periodExpense;
+          const map = {};
+
+          this.periodRecords.forEach(r => {
+            if (this.isExpense(r)) {
               const cat = r.類別 || r.category || '未分類';
               const amt = Math.abs(Number(r.金額 || r.amount || 0));
               map[cat] = (map[cat] || 0) + amt;
@@ -567,9 +633,9 @@
             console.error('載入失敗', e);
           }
 
-          if (this.availableYearMonths.length > 0) {
-            if (!this.selectedYearMonth || !this.availableYearMonths.includes(this.selectedYearMonth)) {
-              this.selectedYearMonth = this.availableYearMonths[0];
+          if (this.availableTimeOptions.length > 0) {
+            if (!this.selectedTimePeriod || !this.availableTimeOptions.includes(this.selectedTimePeriod)) {
+              this.selectedTimePeriod = this.availableTimeOptions[0];
             }
           }
         },
@@ -597,7 +663,11 @@
           };
 
           this.records.unshift(localRecord);
-          this.selectedYearMonth = addedDateYM;
+          if (this.timeDimension === 'month') {
+            this.selectedTimePeriod = addedDateYM;
+          } else {
+            this.selectedTimePeriod = addedDateYM.substring(0, 4);
+          }
 
           const newItem = {
             action: 'add',
