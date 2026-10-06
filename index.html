@@ -59,10 +59,10 @@
             <label class="block text-xs font-semibold text-slate-500 mb-1">收支類型</label>
             <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl w-full">
               <button type="button" @click="setFormType('expense')" :class="form.type === 'expense' ? 'bg-rose-500 text-white font-bold shadow' : 'text-slate-600'" class="py-2 rounded-lg text-sm transition flex justify-center items-center gap-2">
-                <i class="fa-solid fa-arrow-down"></i> 支出 (負數)
+                <i class="fa-solid fa-arrow-down"></i> 支出
               </button>
               <button type="button" @click="setFormType('income')" :class="form.type === 'income' ? 'bg-emerald-500 text-white font-bold shadow' : 'text-slate-600'" class="py-2 rounded-lg text-sm transition flex justify-center items-center gap-2">
-                <i class="fa-solid fa-arrow-up"></i> 收入 (正數)
+                <i class="fa-solid fa-arrow-up"></i> 收入
               </button>
             </div>
           </div>
@@ -233,7 +233,7 @@
                 <i class="fa-solid fa-pie-chart"></i> 類別加總
               </button>
               <button @click="yearSummaryMode = 'monthly'" :class="yearSummaryMode === 'monthly' ? 'bg-white text-emerald-600 font-bold shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-sm transition flex items-center justify-center gap-2 whitespace-nowrap">
-                <i class="fa-solid fa-calendar-days"></i> 每月收支總覽
+                <i class="fa-solid fa-calendar-days"></i> 每月總覽
               </button>
             </div>
           </div>
