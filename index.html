@@ -135,7 +135,7 @@
         <!-- 上方工具列 -->
         <div class="flex flex-col gap-3 mb-6 pb-4 border-b border-slate-100 w-full">
           
-          <!-- 第 1 行：切換按鈕 + 搜尋框 (大版型右側) -->
+          <!-- 第 1 行：切換按鈕 + 搜尋框 -->
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 w-full">
             <div class="bg-slate-100 p-1 rounded-xl flex items-center space-x-1 w-full md:w-auto">
               <button @click="trackerSubView = 'list'" :class="trackerSubView === 'list' ? 'bg-white text-emerald-600 font-bold shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 md:flex-none px-4 py-1.5 rounded-lg text-sm transition flex items-center justify-center gap-2 whitespace-nowrap">
@@ -146,15 +146,13 @@
               </button>
             </div>
 
-            <!-- 大版型搜尋框（第 1 行右側） -->
             <div class="hidden md:block w-64" x-show="trackerSubView === 'list'">
               <input type="text" x-model="searchQuery" placeholder="搜尋備註/類別..." class="w-full px-3 py-1.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
             </div>
           </div>
 
-          <!-- 第 2 行：【月 / 年】切換 + 【月份下拉選單】 -->
+          <!-- 第 2 行：【月 / 年】切換 + 下拉選單 -->
           <div class="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto">
-            <!-- 【月 / 年】切換按鈕 (小版型獨立一行滿寬) -->
             <div class="bg-slate-100 p-1 rounded-xl flex items-center space-x-1 w-full md:w-28 flex-shrink-0">
               <button @click="switchTimeDimension('month')" :class="timeDimension === 'month' ? 'bg-emerald-600 text-white font-bold shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 py-1 text-center rounded-lg text-sm transition whitespace-nowrap">
                 月
@@ -164,7 +162,6 @@
               </button>
             </div>
 
-            <!-- 【月份：2026年10月】下拉選單 (小版型獨立一行滿寬) -->
             <div class="flex items-center justify-between md:justify-start bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-100 w-full md:w-auto">
               <span class="text-xs font-semibold text-slate-500 whitespace-nowrap mr-1" x-text="timeDimension === 'month' ? '月份：' : '年份：'"></span>
               <select x-model="selectedTimePeriod" @change="onPeriodDropdownChange" class="custom-select bg-transparent font-bold text-emerald-700 text-sm outline-none cursor-pointer w-auto text-right md:text-left whitespace-nowrap">
@@ -175,30 +172,23 @@
             </div>
           </div>
 
-          <!-- 小版型第 3 行：搜尋框 -->
           <div class="w-full md:hidden" x-show="trackerSubView === 'list'">
             <input type="text" x-model="searchQuery" placeholder="搜尋備註/類別..." class="w-full px-3 py-1.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
           </div>
 
-          <!-- 收支金額顯示區：小版型分兩行靠左 / 大版型同一行靠右 -->
-          <!-- 收支金額顯示區：小版型分兩行且金額靠右 / 大版型同一行靠右 -->
-			<div class="w-full pt-1">
-			  <div class="text-xs sm:text-sm font-semibold flex flex-col md:flex-row md:items-center justify-between md:justify-end gap-1.5 md:gap-6 w-full">
-				
-				<!-- 收入 -->
-				<div class="flex items-center justify-between md:justify-start w-full md:w-auto">
-				  <span class="text-emerald-600" x-text="formatPeriodLabel(selectedTimePeriod) + '收入:'"></span>
-				  <span class="font-bold text-emerald-600 ml-2" x-text="'+$' + periodIncome.toLocaleString()"></span>
-				</div>
-
-				<!-- 支出 -->
-				<div class="flex items-center justify-between md:justify-start w-full md:w-auto">
-				  <span class="text-rose-500" x-text="formatPeriodLabel(selectedTimePeriod) + '支出:'"></span>
-				  <span class="font-bold text-rose-500 ml-2" x-text="'-$' + periodExpense.toLocaleString()"></span>
-				</div>
-
-			  </div>
-			</div>
+          <!-- 收支金額顯示區 -->
+          <div class="w-full pt-1">
+            <div class="text-xs sm:text-sm font-semibold flex flex-col md:flex-row md:items-center justify-between md:justify-end gap-1.5 md:gap-6 w-full">
+              <div class="flex items-center justify-between md:justify-start w-full md:w-auto">
+                <span class="text-emerald-600" x-text="formatPeriodLabel(selectedTimePeriod) + '收入:'"></span>
+                <span class="font-bold text-emerald-600 ml-2" x-text="'+$' + periodIncome.toLocaleString()"></span>
+              </div>
+              <div class="flex items-center justify-between md:justify-start w-full md:w-auto">
+                <span class="text-rose-500" x-text="formatPeriodLabel(selectedTimePeriod) + '支出:'"></span>
+                <span class="font-bold text-rose-500 ml-2" x-text="'-$' + periodExpense.toLocaleString()"></span>
+              </div>
+            </div>
+          </div>
 
         </div>
 
@@ -207,11 +197,9 @@
           <template x-for="item in filteredPeriodRecords" :key="item.ID || item.id">
             <div class="py-3 flex justify-between items-center hover:bg-slate-50 px-1 sm:px-2 rounded-lg transition gap-2">
               <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
-                
                 <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold" :class="getCategoryStyle(item.類別 || item.category).bgClass">
                   <i :class="getCategoryStyle(item.類別 || item.category).icon"></i>
                 </div>
-
                 <div class="min-w-0">
                   <div class="flex items-center space-x-1.5 sm:space-x-2 flex-wrap">
                     <span class="font-bold text-slate-800 text-sm sm:text-base truncate" x-text="item.類別 || item.category"></span>
@@ -236,67 +224,144 @@
           </template>
         </div>
 
-        <!-- 視圖 2：類別加總統計 -->
-        <div x-show="trackerSubView === 'summary'" class="space-y-8 py-2 w-full">
+        <!-- 視圖 2：統計分析 -->
+        <div x-show="trackerSubView === 'summary'" class="space-y-6 py-2 w-full">
           
-          <!-- 上方：收入統計 -->
-          <div class="space-y-4 bg-emerald-50/40 p-4 rounded-xl border border-emerald-100">
-            <h3 class="text-base font-bold text-emerald-700 flex items-center gap-2">
-              <i class="fa-solid fa-arrow-up text-emerald-600"></i> 收入統計加總
-            </h3>
-
-            <template x-for="cat in incomeCategorySummaryList" :key="cat.category">
-              <div class="space-y-1 w-full">
-                <div class="flex justify-between items-center text-sm">
-                  <div class="flex items-center space-x-2">
-                    <i :class="getCategoryStyle(cat.category).icon + ' ' + getCategoryStyle(cat.category).textClass"></i>
-                    <span class="font-bold text-slate-700" x-text="cat.category"></span>
-                  </div>
-                  <div class="space-x-2">
-                    <span class="text-xs text-slate-400" x-text="cat.percent + '%'"></span>
-                    <span class="font-bold text-emerald-600" x-text="'+$' + cat.amount.toLocaleString()"></span>
-                  </div>
-                </div>
-                <div class="w-full bg-emerald-100/60 rounded-full h-3 overflow-hidden">
-                  <div class="h-3 rounded-full bg-emerald-500 transition-all duration-300" 
-                       :style="'width: ' + cat.percent + '%'"></div>
-                </div>
-              </div>
-            </template>
-
-            <template x-if="incomeCategorySummaryList.length === 0">
-              <div class="text-center py-4 text-slate-400 text-sm" x-text="formatPeriodLabel(selectedTimePeriod) + ' 尚無收入紀錄'"></div>
-            </template>
+          <div x-show="timeDimension === 'year'" class="flex justify-center border-b border-slate-100 pb-3">
+            <div class="bg-slate-100 p-1 rounded-xl flex items-center space-x-1 w-full sm:w-auto">
+              <button @click="yearSummaryMode = 'category'" :class="yearSummaryMode === 'category' ? 'bg-white text-emerald-600 font-bold shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-sm transition flex items-center justify-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-pie-chart"></i> 類別加總
+              </button>
+              <button @click="yearSummaryMode = 'monthly'" :class="yearSummaryMode === 'monthly' ? 'bg-white text-emerald-600 font-bold shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-sm transition flex items-center justify-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-calendar-days"></i> 每月收支總覽
+              </button>
+            </div>
           </div>
 
-          <!-- 下方：支出統計 -->
-          <div class="space-y-4 bg-rose-50/40 p-4 rounded-xl border border-rose-100">
-            <h3 class="text-base font-bold text-rose-700 flex items-center gap-2">
-              <i class="fa-solid fa-arrow-down text-rose-600"></i> 支出統計加總
-            </h3>
+          <!-- 模式 1：類別加總統計 -->
+          <div x-show="timeDimension === 'month' || (timeDimension === 'year' && yearSummaryMode === 'category')" class="space-y-8">
+            <!-- 收入統計 -->
+            <div class="space-y-4 bg-emerald-50/40 p-4 rounded-xl border border-emerald-100">
+              <h3 class="text-base font-bold text-emerald-700 flex items-center gap-2">
+                <i class="fa-solid fa-arrow-up text-emerald-600"></i> 收入統計加總
+              </h3>
 
-            <template x-for="cat in expenseCategorySummaryList" :key="cat.category">
-              <div class="space-y-1 w-full">
-                <div class="flex justify-between items-center text-sm">
-                  <div class="flex items-center space-x-2">
-                    <i :class="getCategoryStyle(cat.category).icon + ' ' + getCategoryStyle(cat.category).textClass"></i>
-                    <span class="font-bold text-slate-700" x-text="cat.category"></span>
+              <template x-for="cat in incomeCategorySummaryList" :key="cat.category">
+                <div class="space-y-1 w-full">
+                  <div class="flex justify-between items-center text-sm">
+                    <div class="flex items-center space-x-2">
+                      <i :class="getCategoryStyle(cat.category).icon + ' ' + getCategoryStyle(cat.category).textClass"></i>
+                      <span class="font-bold text-slate-700" x-text="cat.category"></span>
+                    </div>
+                    <div class="space-x-2">
+                      <span class="text-xs text-slate-400" x-text="cat.percent + '%'"></span>
+                      <span class="font-bold text-emerald-600" x-text="'+$' + cat.amount.toLocaleString()"></span>
+                    </div>
                   </div>
-                  <div class="space-x-2">
-                    <span class="text-xs text-slate-400" x-text="cat.percent + '%'"></span>
-                    <span class="font-bold text-rose-500" x-text="'-$' + cat.amount.toLocaleString()"></span>
+                  <div class="w-full bg-emerald-100/60 rounded-full h-3 overflow-hidden">
+                    <div class="h-3 rounded-full bg-emerald-500 transition-all duration-300" 
+                         :style="'width: ' + cat.percent + '%'"></div>
                   </div>
                 </div>
-                <div class="w-full bg-rose-100/60 rounded-full h-3 overflow-hidden">
-                  <div class="h-3 rounded-full bg-rose-500 transition-all duration-300" 
-                       :style="'width: ' + cat.percent + '%'"></div>
+              </template>
+
+              <template x-if="incomeCategorySummaryList.length === 0">
+                <div class="text-center py-4 text-slate-400 text-sm" x-text="formatPeriodLabel(selectedTimePeriod) + ' 尚無收入紀錄'"></div>
+              </template>
+            </div>
+
+            <!-- 支出統計 -->
+            <div class="space-y-4 bg-rose-50/40 p-4 rounded-xl border border-rose-100">
+              <h3 class="text-base font-bold text-rose-700 flex items-center gap-2">
+                <i class="fa-solid fa-arrow-down text-rose-600"></i> 支出統計加總
+              </h3>
+
+              <template x-for="cat in expenseCategorySummaryList" :key="cat.category">
+                <div class="space-y-1 w-full">
+                  <div class="flex justify-between items-center text-sm">
+                    <div class="flex items-center space-x-2">
+                      <i :class="getCategoryStyle(cat.category).icon + ' ' + getCategoryStyle(cat.category).textClass"></i>
+                      <span class="font-bold text-slate-700" x-text="cat.category"></span>
+                    </div>
+                    <div class="space-x-2">
+                      <span class="text-xs text-slate-400" x-text="cat.percent + '%'"></span>
+                      <span class="font-bold text-rose-500" x-text="'-$' + cat.amount.toLocaleString()"></span>
+                    </div>
+                  </div>
+                  <div class="w-full bg-rose-100/60 rounded-full h-3 overflow-hidden">
+                    <div class="h-3 rounded-full bg-rose-500 transition-all duration-300" 
+                         :style="'width: ' + cat.percent + '%'"></div>
+                  </div>
                 </div>
+              </template>
+
+              <template x-if="expenseCategorySummaryList.length === 0">
+                <div class="text-center py-4 text-slate-400 text-sm" x-text="formatPeriodLabel(selectedTimePeriod) + ' 尚無支出紀錄'"></div>
+              </template>
+            </div>
+          </div>
+
+          <!-- 模式 2：每月收支總覽 (卡片顯示邏輯優化) -->
+          <div x-show="timeDimension === 'year' && yearSummaryMode === 'monthly'" class="space-y-4 bg-slate-50/80 p-4 rounded-xl border border-slate-200">
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b border-slate-200/60 pb-3">
+              <h3 class="text-base font-bold text-slate-700 flex items-center gap-2">
+                <i class="fa-solid fa-calendar-days text-emerald-600"></i> <span x-text="selectedTimePeriod + ' 年每月收支總覽'"></span>
+              </h3>
+
+              <!-- 右上角分類選單 -->
+              <div class="flex items-center bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm self-end sm:self-auto">
+                <span class="text-xs font-semibold text-slate-500 whitespace-nowrap mr-1">篩選分類：</span>
+                <select x-model="monthlyFilterCategory" class="custom-select bg-transparent font-bold text-emerald-700 text-xs sm:text-sm outline-none cursor-pointer">
+                  <option value="all">全部類別</option>
+                  <optgroup label="支出類別">
+                    <template x-for="cat in expenseCategories" :key="'m-exp-' + cat">
+                      <option :value="cat" x-text="cat"></option>
+                    </template>
+                  </optgroup>
+                  <optgroup label="收入類別">
+                    <template x-for="cat in incomeCategories" :key="'m-inc-' + cat">
+                      <option :value="cat" x-text="cat"></option>
+                    </template>
+                  </optgroup>
+                </select>
               </div>
-            </template>
+            </div>
 
-            <template x-if="expenseCategorySummaryList.length === 0">
-              <div class="text-center py-4 text-slate-400 text-sm" x-text="formatPeriodLabel(selectedTimePeriod) + ' 尚無支出紀錄'"></div>
-            </template>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <template x-for="mItem in monthlySummaryList" :key="mItem.month">
+                <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between hover:border-emerald-300 transition">
+                  
+                  <!-- 全部位類時：顯示結餘與收支細項 -->
+                  <template x-if="monthlyFilterCategory === 'all'">
+                    <div>
+                      <div class="flex justify-between items-center mb-2 pb-1.5 border-b border-slate-100">
+                        <span class="font-bold text-slate-700" x-text="parseInt(mItem.month, 10) + ' 月'"></span>
+                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full" :class="mItem.net >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'" x-text="'結餘: ' + (mItem.net >= 0 ? '+' : '') + mItem.net.toLocaleString()"></span>
+                      </div>
+                      <div class="flex justify-between items-center text-xs space-x-1">
+                        <span class="text-emerald-600 font-semibold" x-text="'收: +$' + mItem.income.toLocaleString()"></span>
+                        <span class="text-rose-500 font-semibold" x-text="'支: -$' + mItem.expense.toLocaleString()"></span>
+                      </div>
+                    </div>
+                  </template>
+
+                  <!-- 特定類別時：僅顯示單一總金額 -->
+                  <template x-if="monthlyFilterCategory !== 'all'">
+                    <div>
+                      <div class="flex justify-between items-center mb-1 pb-1 border-b border-slate-100">
+                        <span class="font-bold text-slate-700" x-text="parseInt(mItem.month, 10) + ' 月'"></span>
+                        <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md" x-text="monthlyFilterCategory"></span>
+                      </div>
+                      <div class="flex justify-between items-center pt-1">
+                        <span class="text-xs text-slate-400 font-medium">小計</span>
+                        <span class="font-bold text-base" :class="mItem.total < 0 ? 'text-rose-500' : (mItem.total > 0 ? 'text-emerald-600' : 'text-slate-400')" x-text="(mItem.total > 0 ? '+$' : (mItem.total < 0 ? '-$' : '$')) + Math.abs(mItem.total).toLocaleString()"></span>
+                      </div>
+                    </div>
+                  </template>
+
+                </div>
+              </template>
+            </div>
           </div>
 
         </div>
@@ -368,6 +433,8 @@
       return {
         trackerSubView: 'list',
         timeDimension: 'month',
+        yearSummaryMode: 'category',
+        monthlyFilterCategory: 'all',
         selectedTimePeriod: `${currentYearStr}-${currentMonthStr}`,
         
         webAppUrl: 'https://script.google.com/macros/s/AKfycbwxyqVeM-LHKa1dIa2JF9H0xF7xCvhyUdpMdeiyk4JIri4y8qqKKFQ-cRuVmuYQ7w5rLQ/exec',
@@ -599,6 +666,53 @@
           return this.periodRecords
             .filter(r => this.isExpense(r))
             .reduce((sum, r) => sum + Math.abs(Number(r.金額 || r.amount || 0)), 0);
+        },
+
+        get monthlySummaryList() {
+          if (this.timeDimension !== 'year') return [];
+
+          const monthMap = {};
+          this.monthOptions.forEach(m => {
+            monthMap[m] = { income: 0, expense: 0, total: 0 };
+          });
+
+          this.periodRecords.forEach(r => {
+            const cat = r.類別 || r.category || '';
+            
+            // 下拉選單為「全部」或是符合選取的類別才統計
+            if (this.monthlyFilterCategory !== 'all' && cat !== this.monthlyFilterCategory) {
+              return;
+            }
+
+            const dateStr = this.formatDateStr(r.日期 || r.date);
+            if (dateStr && dateStr.length >= 7) {
+              const m = dateStr.substring(5, 7);
+              if (monthMap[m]) {
+                const rawAmt = Number(r.金額 || r.amount || 0);
+                const absAmt = Math.abs(rawAmt);
+                
+                if (this.isExpense(r)) {
+                  monthMap[m].expense += absAmt;
+                  monthMap[m].total -= absAmt; // 支出累積為負數
+                } else {
+                  monthMap[m].income += absAmt;
+                  monthMap[m].total += absAmt;  // 收入累積為正數
+                }
+              }
+            }
+          });
+
+          return this.monthOptions.map(m => {
+            const inc = monthMap[m].income;
+            const exp = monthMap[m].expense;
+            return {
+              month: m,
+              income: inc,
+              expense: exp,
+              net: inc - exp,
+              total: monthMap[m].total
+            };
+          });
         },
 
         get incomeCategorySummaryList() {
