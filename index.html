@@ -33,7 +33,7 @@
     }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen pb-12 overflow-x-hidden relative" x-data="appData()" x-init="initApp()">
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-24 overflow-x-hidden relative" x-data="appData()" x-init="initApp()">
 
   <!-- 全螢幕 Locking Loading 遮罩 -->
   <div x-show="loading" 
@@ -84,86 +84,6 @@
     <!-- 記帳與紀錄 -->
     <div class="space-y-6 w-full">
       
-      <!-- 記帳表單 -->
-      <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 w-full box-border overflow-hidden">
-        <h2 class="text-lg font-bold mb-4 text-slate-700">新增交易紀錄</h2>
-        <form @submit.prevent="addRecord" class="space-y-4 w-full">
-          <div>
-            <label class="block text-xs font-semibold text-slate-500 mb-1">收支類型</label>
-            <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl w-full">
-              <button type="button" @click="setFormType('expense')" :class="form.type === 'expense' ? 'bg-rose-500 text-white font-bold shadow' : 'text-slate-600'" class="py-2 rounded-lg text-sm transition flex justify-center items-center gap-2">
-                <i class="fa-solid fa-arrow-down"></i> 支出
-              </button>
-              <button type="button" @click="setFormType('income')" :class="form.type === 'income' ? 'bg-emerald-500 text-white font-bold shadow' : 'text-slate-600'" class="py-2 rounded-lg text-sm transition flex justify-center items-center gap-2">
-                <i class="fa-solid fa-arrow-up"></i> 收入
-              </button>
-            </div>
-          </div>
-
-          <div class="space-y-4 w-full">
-            
-            <!-- 日期選擇 -->
-            <div class="w-full">
-              <label class="block text-xs font-semibold text-slate-500 mb-1">日期</label>
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-2 w-full">
-                <div>
-                  <select x-model="formYear" @change="updateFormDateFromDropdown()" class="custom-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-medium text-slate-700">
-                    <template x-for="y in formYears" :key="y">
-                      <option :value="y" x-text="y + '年'"></option>
-                    </template>
-                  </select>
-                </div>
-                <div class="grid grid-cols-2 md:contents gap-2">
-                  <div>
-                    <select x-model="formMonth" @change="updateFormDateFromDropdown()" class="custom-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-medium text-slate-700">
-                      <template x-for="m in monthOptions" :key="m">
-                        <option :value="m" x-text="parseInt(m, 10) + '月'"></option>
-                      </template>
-                    </select>
-                  </div>
-                  <div>
-                    <select x-model="formDay" @change="updateFormDateFromDropdown()" class="custom-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-medium text-slate-700">
-                      <template x-for="d in formDaysList" :key="d">
-                        <option :value="d" x-text="parseInt(d, 10) + '日'"></option>
-                      </template>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 分類 與 金額 -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-              <div class="w-full">
-                <label class="block text-xs font-semibold text-slate-500 mb-1">分類</label>
-                <select x-model="form.category" class="custom-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-medium text-slate-700">
-                  <template x-for="cat in currentCategories" :key="cat">
-                    <option :value="cat" x-text="cat"></option>
-                  </template>
-                </select>
-              </div>
-
-              <div class="w-full">
-                <label class="block text-xs font-semibold text-slate-500 mb-1">金額 ($)</label>
-                <input type="number" x-model.number="form.amount" required min="1" placeholder="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm">
-              </div>
-            </div>
-
-            <!-- 備註 -->
-            <div class="w-full">
-              <label class="block text-xs font-semibold text-slate-500 mb-1">備註</label>
-              <input type="text" x-model="form.note" placeholder="例如：薪水、午餐" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm">
-            </div>
-
-          </div>
-
-          <button type="submit" :disabled="loading" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-lg hover:bg-emerald-700 transition flex justify-center items-center gap-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed">
-            <i class="fa-solid fa-plus"></i>
-            <span>儲存紀錄</span>
-          </button>
-        </form>
-      </div>
-
       <!-- 紀錄展示區 -->
       <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 w-full box-border overflow-hidden">
         
@@ -447,14 +367,22 @@
 
   </main>
 
-  <!-- 編輯 Modal 彈窗 -->
+  <!-- 固定在畫面最下方的懸浮新增按鈕 (使用 z-40) -->
+  <div class="fixed bottom-6 right-6 z-45">
+    <button @click="openAddModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-3.5 rounded-full shadow-2xl flex items-center gap-2.5 transition-all transform hover:scale-105 active:scale-95">
+      <i class="fa-solid fa-plus text-lg"></i>
+      <span class="text-sm tracking-wide">新增交易紀錄</span>
+    </button>
+  </div>
+
+  <!-- 編輯 / 新增共用 Modal 彈窗 -->
   <div x-show="showEditModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex justify-center items-center p-4 z-50" x-cloak>
     <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-5 sm:p-6 space-y-4 box-border">
       <div class="flex justify-between items-center border-b pb-2">
-        <h3 class="font-bold text-lg text-slate-700">編輯交易紀錄</h3>
+        <h3 class="font-bold text-lg text-slate-700" x-text="isAddingNew ? '新增交易紀錄' : '編輯交易紀錄'"></h3>
         <button @click="showEditModal = false" :disabled="loading" class="text-slate-400 hover:text-slate-600 p-1 disabled:opacity-50"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
-      <form @submit.prevent="updateRecord" class="space-y-4 w-full">
+      <form @submit.prevent="handleModalSubmit" class="space-y-4 w-full">
         
         <!-- 收支類型切換 -->
         <div>
@@ -512,19 +440,19 @@
         <!-- 金額 -->
         <div>
           <label class="block text-xs font-semibold text-slate-500 mb-1">金額 ($)</label>
-          <input type="number" x-model.number="editForm.amount" required min="1" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-sm">
+          <input type="number" x-model.number="editForm.amount" required min="1" placeholder="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-sm">
         </div>
 
         <!-- 備註 -->
         <div>
           <label class="block text-xs font-semibold text-slate-500 mb-1">備註</label>
-          <input type="text" x-model="editForm.note" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-sm">
+          <input type="text" x-model="editForm.note" placeholder="例如：薪水、午餐" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-sm">
         </div>
 
         <div class="flex gap-2 pt-2">
           <button type="button" @click="showEditModal = false" :disabled="loading" class="w-1/2 py-2 border border-slate-300 rounded-lg text-slate-600 font-semibold hover:bg-slate-50 disabled:opacity-50 transition">取消</button>
           <button type="submit" :disabled="loading" class="w-1/2 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-50 transition flex items-center justify-center gap-2">
-            <span>更新紀錄</span>
+            <span x-text="isAddingNew ? '新增紀錄' : '更新紀錄'"></span>
           </button>
         </div>
       </form>
@@ -575,25 +503,14 @@
         },
 
         monthOptions: ['01','02','03','04','05','06','07','08','09','10','11','12'],
-        formDaysList: [],
         editDaysList: [],
-
-        formYear: currentYearStr,
-        formMonth: currentMonthStr,
-        formDay: currentDayStr,
-        form: {
-          type: 'expense',
-          date: `${currentYearStr}-${currentMonthStr}-${currentDayStr}`,
-          category: '飲食',
-          amount: '',
-          note: ''
-        },
 
         editYear: currentYearStr,
         editMonth: currentMonthStr,
         editDay: currentDayStr,
         showEditModal: false,
-        editForm: { id: '', type: 'expense', date: '', category: '', amount: '', note: '' },
+        isAddingNew: false,
+        editForm: { id: '', type: 'expense', date: `${currentYearStr}-${currentMonthStr}-${currentDayStr}`, category: '飲食', amount: '', note: '' },
 
         records: [],
         loading: false,
@@ -610,7 +527,6 @@
         },
 
         async initApp() {
-          this.rebuildFormDays();
           this.rebuildEditDays();
           await this.loadAllYearsData();
         },
@@ -643,22 +559,6 @@
           }
         },
 
-        rebuildFormDays() {
-          const y = parseInt(this.formYear, 10);
-          const m = parseInt(this.formMonth, 10);
-          const totalDays = new Date(y, m, 0).getDate();
-          
-          const days = [];
-          for (let d = 1; d <= totalDays; d++) {
-            days.push(String(d).padStart(2, '0'));
-          }
-          this.formDaysList = days;
-
-          if (parseInt(this.formDay, 10) > totalDays) {
-            this.formDay = String(totalDays).padStart(2, '0');
-          }
-        },
-
         rebuildEditDays() {
           const y = parseInt(this.editYear, 10);
           const m = parseInt(this.editMonth, 10);
@@ -673,11 +573,6 @@
           if (parseInt(this.editDay, 10) > totalDays) {
             this.editDay = String(totalDays).padStart(2, '0');
           }
-        },
-
-        updateFormDateFromDropdown() {
-          this.rebuildFormDays();
-          this.form.date = `${this.formYear}-${this.formMonth}-${this.formDay}`;
         },
 
         updateEditDateFromDropdown() {
@@ -751,17 +646,8 @@
           }
         },
 
-        get currentCategories() {
-          return this.form.type === 'expense' ? this.expenseCategories : this.incomeCategories;
-        },
-
         get editCategories() {
           return this.editForm.type === 'expense' ? this.expenseCategories : this.incomeCategories;
-        },
-
-        setFormType(type) {
-          this.form.type = type;
-          this.form.category = type === 'expense' ? this.expenseCategories[0] : this.incomeCategories[0];
         },
 
         setEditFormType(type) {
@@ -928,64 +814,30 @@
             .sort((a, b) => b.amount - a.amount);
         },
 
-        async addRecord() {
-          if (this.loading) return;
-          if (!this.form.amount || this.form.amount <= 0) return;
-          
-          this.loadingText = '新增儲存中...';
-          this.loading = true;
+        openAddModal() {
+          this.isAddingNew = true;
+          const currentY = new Date().getFullYear().toString();
+          const currentM = String(new Date().getMonth() + 1).padStart(2, '0');
+          const currentD = String(new Date().getDate()).padStart(2, '0');
 
-          const addedYear = this.form.date.substring(0, 4);
-          const addedMonth = this.form.date.substring(5, 7);
-          const newId = Date.now().toString();
+          this.editYear = currentY;
+          this.editMonth = currentM;
+          this.editDay = currentD;
+          this.rebuildEditDays();
 
-          const localRecord = {
-            ID: newId,
-            id: newId,
-            類型: this.form.type,
-            type: this.form.type,
-            日期: this.form.date,
-            date: this.form.date,
-            類別: this.form.category,
-            category: this.form.category,
-            金額: this.form.type === 'expense' ? -Math.abs(Number(this.form.amount)) : Math.abs(Number(this.form.amount)),
-            amount: this.form.type === 'expense' ? -Math.abs(Number(this.form.amount)) : Math.abs(Number(this.form.amount)),
-            備註: this.form.note,
-            note: this.form.note
+          this.editForm = {
+            id: '',
+            type: 'expense',
+            date: `${currentY}-${currentM}-${currentD}`,
+            category: this.expenseCategories[0],
+            amount: '',
+            note: ''
           };
-
-          this.records.unshift(localRecord);
-          this.selectedYear = addedYear;
-          this.selectedMonth = addedMonth;
-
-          const newItem = {
-            action: 'add',
-            type: this.form.type,
-            date: this.form.date,
-            category: this.form.category,
-            amount: Number(this.form.amount),
-            note: this.form.note
-          };
-
-          try {
-            await fetch(this.webAppUrl, {
-              method: 'POST',
-              mode: 'no-cors',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(newItem)
-            });
-            this.showToast('紀錄新增成功！', 'success');
-          } catch (e) {
-            console.error('寫入 API 失敗', e);
-            this.showToast('寫入失敗，請稍後再試', 'danger');
-          } finally {
-            this.form.amount = '';
-            this.form.note = '';
-            this.loading = false;
-          }
+          this.showEditModal = true;
         },
 
         openEditModal(item) {
+          this.isAddingNew = false;
           const dateStr = this.formatDateStr(item.日期 || item.date);
           const parts = dateStr.split('-');
           
@@ -1005,6 +857,70 @@
             note: item.備註 || item.note || ''
           };
           this.showEditModal = true;
+        },
+
+        async handleModalSubmit() {
+          if (this.isAddingNew) {
+            await this.addRecord();
+          } else {
+            await this.updateRecord();
+          }
+        },
+
+        async addRecord() {
+          if (this.loading) return;
+          if (!this.editForm.amount || this.editForm.amount <= 0) return;
+          
+          this.loadingText = '新增儲存中...';
+          this.loading = true;
+
+          const addedYear = this.editForm.date.substring(0, 4);
+          const addedMonth = this.editForm.date.substring(5, 7);
+          const newId = Date.now().toString();
+
+          const localRecord = {
+            ID: newId,
+            id: newId,
+            類型: this.editForm.type,
+            type: this.editForm.type,
+            日期: this.editForm.date,
+            date: this.editForm.date,
+            類別: this.editForm.category,
+            category: this.editForm.category,
+            金額: this.editForm.type === 'expense' ? -Math.abs(Number(this.editForm.amount)) : Math.abs(Number(this.editForm.amount)),
+            amount: this.editForm.type === 'expense' ? -Math.abs(Number(this.editForm.amount)) : Math.abs(Number(this.editForm.amount)),
+            備註: this.editForm.note,
+            note: this.editForm.note
+          };
+
+          this.records.unshift(localRecord);
+          this.selectedYear = addedYear;
+          this.selectedMonth = addedMonth;
+
+          const newItem = {
+            action: 'add',
+            type: this.editForm.type,
+            date: this.editForm.date,
+            category: this.editForm.category,
+            amount: Number(this.editForm.amount),
+            note: this.editForm.note
+          };
+
+          try {
+            await fetch(this.webAppUrl, {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(newItem)
+            });
+            this.showToast('紀錄新增成功！', 'success');
+          } catch (e) {
+            console.error('寫入 API 失敗', e);
+            this.showToast('寫入失敗，請稍後再試', 'danger');
+          } finally {
+            this.loading = false;
+            this.showEditModal = false;
+          }
         },
 
         async updateRecord() {
