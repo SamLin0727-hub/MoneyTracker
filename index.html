@@ -531,7 +531,7 @@
       <!-- 確定 / 取消 -->
       <div class="flex gap-2 pt-1">
         <button type="button" @click="showCalcModal = false" class="w-1/2 py-2 border border-slate-300 rounded-xl text-slate-600 font-semibold hover:bg-slate-50 transition text-sm">取消</button>
-        <button type="button" @click="calcConfirm()" class="w-1/2 py-2 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition text-sm">確定</button>
+        <button type="button" @click="calcConfirm()" :disabled="!calcHasCalculated && calcExpression !== ''" class="w-1/2 py-2 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm">確定</button>
       </div>
     </div>
   </div>
@@ -586,7 +586,7 @@
         editMonth: currentMonthStr,
         editDay: currentDayStr,
         showEditModal: false,
-        showConfirmModal: false, // 控制確認刪除彈跳視窗
+        showConfirmModal: false,
         isAddingNew: false,
         editForm: { id: '', type: 'expense', date: `${currentYearStr}-${currentMonthStr}-${currentDayStr}`, category: '飲食', amount: '', note: '' },
 
@@ -595,6 +595,7 @@
         calcDisplay: '0',
         calcExpression: '',
         calcResetNext: false,
+        calcHasCalculated: true,
 
         records: [],
         loading: false,
@@ -1083,6 +1084,7 @@
           this.calcDisplay = this.editForm.amount ? String(this.editForm.amount) : '0';
           this.calcExpression = '';
           this.calcResetNext = true; 
+          this.calcHasCalculated = true;
           this.showCalcModal = true;
         },
 
@@ -1090,6 +1092,7 @@
           this.calcDisplay = '0';
           this.calcExpression = '';
           this.calcResetNext = false;
+          this.calcHasCalculated = false;
         },
 
         calcBackSpace() {
@@ -1111,11 +1114,19 @@
             if (num === '.' && this.calcDisplay.includes('.')) return;
             this.calcDisplay += num;
           }
+          if (this.calcExpression !== '') {
+            this.calcHasCalculated = false;
+          }
         },
 
         calcAppendOperator(op) {
+          // 如果已經有運算式且剛才輸入完數字，直接連續計算前面的結果
+          if (this.calcExpression !== '' && !this.calcResetNext) {
+            this.calcCalculate();
+          }
           this.calcExpression = this.calcDisplay + ' ' + op;
           this.calcResetNext = true; 
+          this.calcHasCalculated = false; // 必須經過計算或等號才能確定
         },
 
         calcCalculate() {
@@ -1134,6 +1145,7 @@
             this.calcDisplay = String(Math.round(result));
             this.calcExpression = fullExpr + ' =';
             this.calcResetNext = true;
+            this.calcHasCalculated = true;
           } catch (e) {
             this.showToast('格式錯誤', 'danger');
             this.calcClear();
@@ -1141,6 +1153,7 @@
         },
 
         calcConfirm() {
+          if (!this.calcHasCalculated && this.calcExpression !== '') return;
           const val = parseFloat(this.calcDisplay);
           if (!isNaN(val) && val > 0) {
             this.editForm.amount = Math.round(val);
