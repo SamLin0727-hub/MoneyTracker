@@ -369,11 +369,10 @@
 
   <!-- 固定在畫面最下方的懸浮新增按鈕 (使用 z-40) -->
   <div class="fixed bottom-6 right-6 z-45">
-    <button @click="openAddModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-3.5 rounded-full shadow-2xl flex items-center gap-2.5 transition-all transform hover:scale-105 active:scale-95">
-      <i class="fa-solid fa-plus text-lg"></i>
-      <span class="text-sm tracking-wide"></span>
-    </button>
-  </div>
+  <button @click="openAddModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all transform hover:scale-105 active:scale-95">
+    <i class="fa-solid fa-plus text-xl"></i>
+  </button>
+</div>
 
   <!-- 編輯 / 新增共用 Modal 彈窗 -->
   <div x-show="showEditModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex justify-center items-center p-4 z-50" x-cloak>
