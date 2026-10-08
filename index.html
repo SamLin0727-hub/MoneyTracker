@@ -125,22 +125,16 @@
 
             <div class="grid gap-2 w-full md:w-auto md:flex md:items-center" :class="timeDimension === 'month' ? 'grid-cols-2' : 'grid-cols-1'">
               
-              <div class="flex items-center bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-100 w-full md:w-auto">
+              <!-- 頂部篩選：年份按鈕 -->
+              <div @click="openFilterYearModal()" class="flex items-center justify-between bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-100 w-full md:w-auto cursor-pointer hover:border-emerald-500 transition">
                 <span class="text-xs font-semibold text-slate-500 whitespace-nowrap mr-1">年份：</span>
-                <select x-model="selectedYear" class="custom-select bg-transparent font-bold text-emerald-700 text-sm outline-none cursor-pointer w-full md:w-auto text-right md:text-left whitespace-nowrap">
-                  <template x-for="y in availableYears" :key="y">
-                    <option :value="y" x-text="y + '年'"></option>
-                  </template>
-                </select>
+                <span class="font-bold text-emerald-700 text-sm whitespace-nowrap" x-text="selectedYear + '年'"></span>
               </div>
 
-              <div class="flex items-center bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-100 w-full md:w-auto" x-show="timeDimension === 'month'" x-cloak>
+              <!-- 頂部篩選：月份按鈕 -->
+              <div @click="openFilterMonthModal()" class="flex items-center justify-between bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-100 w-full md:w-auto cursor-pointer hover:border-emerald-500 transition" x-show="timeDimension === 'month'" x-cloak>
                 <span class="text-xs font-semibold text-slate-500 whitespace-nowrap mr-1">月份：</span>
-                <select x-model="selectedMonth" class="custom-select bg-transparent font-bold text-emerald-700 text-sm outline-none cursor-pointer w-full md:w-auto text-right md:text-left whitespace-nowrap">
-                  <template x-for="m in monthOptions" :key="m">
-                    <option :value="m" x-text="parseInt(m, 10) + '月'"></option>
-                  </template>
-                </select>
+                <span class="font-bold text-emerald-700 text-sm whitespace-nowrap" x-text="parseInt(selectedMonth, 10) + '月'"></span>
               </div>
 
             </div>
@@ -293,21 +287,10 @@
                 <i class="fa-solid fa-calendar-days text-emerald-600"></i> <span x-text="selectedYear + ' 年每月收支總覽'"></span>
               </h3>
 
-              <div class="flex items-center bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm self-end sm:self-auto">
+              <!-- 篩選分類按鈕 -->
+              <div @click="openFilterCategoryModal()" class="flex items-center justify-between bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm self-end sm:self-auto cursor-pointer hover:border-emerald-500 transition min-w-[150px]">
                 <span class="text-xs font-semibold text-slate-500 whitespace-nowrap mr-1">篩選分類：</span>
-                <select x-model="monthlyFilterCategory" class="custom-select bg-transparent font-bold text-emerald-700 text-xs sm:text-sm outline-none cursor-pointer">
-                  <option value="all">全部類別</option>
-                  <optgroup label="支出類別">
-                    <template x-for="cat in expenseCategories" :key="'m-exp-' + cat">
-                      <option :value="cat" x-text="cat"></option>
-                    </template>
-                  </optgroup>
-                  <optgroup label="收入類別">
-                    <template x-for="cat in incomeCategories" :key="'m-inc-' + cat">
-                      <option :value="cat" x-text="cat"></option>
-                    </template>
-                  </optgroup>
-                </select>
+                <span class="font-bold text-emerald-700 text-xs sm:text-sm whitespace-nowrap" x-text="monthlyFilterCategory === 'all' ? '全部類別' : monthlyFilterCategory"></span>
               </div>
             </div>
 
@@ -385,7 +368,7 @@
           </div>
         </div>
 
-        <!-- 日期欄位與彈跳視窗觸發按鈕 -->
+        <!-- 日期欄位 -->
         <div class="w-full">
           <label class="block text-xs font-semibold text-slate-500 mb-1">日期</label>
           <div @click="openDatePickerModal()" class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-sm font-medium text-slate-700 flex justify-between items-center cursor-pointer hover:border-emerald-500 transition">
@@ -394,7 +377,7 @@
           </div>
         </div>
 
-        <!-- 分類欄位改用點選式彈跳視窗觸發按鈕 -->
+        <!-- 分類欄位 -->
         <div class="w-full">
           <label class="block text-xs font-semibold text-slate-500 mb-1">分類</label>
           <div @click="openCategoryPickerModal()" class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-sm font-medium text-slate-700 flex justify-between items-center cursor-pointer hover:border-emerald-500 transition">
@@ -407,7 +390,7 @@
         </div>
 
         <div class="grid gap-2" :class="editForm.currency === 'TWD' ? 'grid-cols-1' : 'grid-cols-2'">
-          <!-- 幣別欄位改用點選式彈跳視窗觸發按鈕 -->
+          <!-- 幣別欄位 -->
           <div>
             <label class="block text-xs font-semibold text-slate-500 mb-1">幣別</label>
             <div @click="openCurrencyPickerModal()" class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-sm font-medium text-slate-700 flex justify-between items-center cursor-pointer hover:border-emerald-500 transition">
@@ -443,6 +426,124 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- 頂部篩選：年份選擇專屬彈跳視窗 -->
+  <div x-show="showFilterYearModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center p-4 z-[65]" x-cloak>
+    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-5 space-y-4 border border-slate-100">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h4 class="font-bold text-slate-700 flex items-center gap-2">
+          <i class="fa-solid fa-calendar text-emerald-600"></i> 選擇年份
+        </h4>
+        <button @click="showFilterYearModal = false" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2">
+        <template x-for="y in availableYears" :key="y">
+          <div @click="selectFilterYear(y)"
+               class="py-3 rounded-xl border text-sm font-bold text-center cursor-pointer transition select-none flex items-center justify-center"
+               :class="y === selectedYear ? 'bg-amber-300 border-amber-400 text-slate-900 shadow-inner' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'"
+               x-text="y + '年'">
+          </div>
+        </template>
+      </div>
+
+      <div class="pt-1">
+        <button type="button" @click="showFilterYearModal = false" class="w-full py-2 border border-slate-300 rounded-xl text-slate-600 font-semibold hover:bg-slate-50 transition text-sm">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 頂部篩選：月份選擇專屬彈跳視窗 -->
+  <div x-show="showFilterMonthModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center p-4 z-[65]" x-cloak>
+    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-5 space-y-4 border border-slate-100">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h4 class="font-bold text-slate-700 flex items-center gap-2">
+          <i class="fa-solid fa-calendar-days text-emerald-600"></i> 選擇月份 (<span x-text="selectedYear + '年'"></span>)
+        </h4>
+        <button @click="showFilterMonthModal = false" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-4 gap-2 text-center">
+        <template x-for="m in monthOptions" :key="m">
+          <div @click="selectFilterMonth(m)"
+               class="py-3 rounded-xl border text-sm font-bold cursor-pointer transition select-none flex items-center justify-center"
+               :class="m === selectedMonth ? 'bg-amber-300 border-amber-400 text-slate-900 shadow-inner' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'"
+               x-text="parseInt(m, 10) + '月'">
+          </div>
+        </template>
+      </div>
+
+      <div class="pt-1">
+        <button type="button" @click="showFilterMonthModal = false" class="w-full py-2 border border-slate-300 rounded-xl text-slate-600 font-semibold hover:bg-slate-50 transition text-sm">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 統計分析：篩選分類選擇專屬彈跳視窗 (加入支出/收入切換分頁與 一行三個) -->
+  <div x-show="showFilterCategoryModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center p-4 z-[65]" x-cloak>
+    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-5 space-y-4 border border-slate-100 max-h-[85vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h4 class="font-bold text-slate-700 flex items-center gap-2">
+          <i class="fa-solid fa-filter text-emerald-600"></i> 篩選分類總覽
+        </h4>
+        <button @click="showFilterCategoryModal = false" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <!-- 全部類別選項 -->
+        <div @click="selectFilterCategory('all')"
+             class="p-3 rounded-xl border text-sm font-bold cursor-pointer transition select-none flex items-center justify-center gap-2"
+             :class="'all' === monthlyFilterCategory ? 'bg-amber-300 border-amber-400 text-slate-900 shadow-inner' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'">
+          <i class="fa-solid fa-layer-group text-slate-500"></i>
+          <span>全部類別</span>
+        </div>
+
+        <!-- 支出/收入切換分頁 -->
+        <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl w-full">
+          <button type="button" @click="filterCategoryTab = 'expense'" :class="filterCategoryTab === 'expense' ? 'bg-rose-500 text-white font-bold shadow' : 'text-slate-600'" class="py-1.5 rounded-lg text-xs font-semibold transition flex justify-center items-center gap-1.5">
+            <i class="fa-solid fa-arrow-down"></i> 支出類別
+          </button>
+          <button type="button" @click="filterCategoryTab = 'income'" :class="filterCategoryTab === 'income' ? 'bg-emerald-500 text-white font-bold shadow' : 'text-slate-600'" class="py-1.5 rounded-lg text-xs font-semibold transition flex justify-center items-center gap-1.5">
+            <i class="fa-solid fa-arrow-up"></i> 收入類別
+          </button>
+        </div>
+
+        <!-- 支出類別列表 -->
+        <div x-show="filterCategoryTab === 'expense'" class="grid grid-cols-3 gap-2">
+          <template x-for="cat in expenseCategories" :key="'f-exp-' + cat">
+            <div @click="selectFilterCategory(cat)"
+                 class="p-2.5 rounded-xl border text-xs font-bold cursor-pointer transition select-none flex flex-col items-center justify-center gap-1.5 text-center"
+                 :class="cat === monthlyFilterCategory ? 'bg-amber-300 border-amber-400 text-slate-900 shadow-inner' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'">
+              <i :class="getCategoryStyle(cat).icon + ' text-sm ' + getCategoryStyle(cat).textClass"></i>
+              <span class="truncate w-full" x-text="cat"></span>
+            </div>
+          </template>
+        </div>
+
+        <!-- 收入類別列表 -->
+        <div x-show="filterCategoryTab === 'income'" class="grid grid-cols-3 gap-2" x-cloak>
+          <template x-for="cat in incomeCategories" :key="'f-inc-' + cat">
+            <div @click="selectFilterCategory(cat)"
+                 class="p-2.5 rounded-xl border text-xs font-bold cursor-pointer transition select-none flex flex-col items-center justify-center gap-1.5 text-center"
+                 :class="cat === monthlyFilterCategory ? 'bg-amber-300 border-amber-400 text-slate-900 shadow-inner' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'">
+              <i :class="getCategoryStyle(cat).icon + ' text-sm ' + getCategoryStyle(cat).textClass"></i>
+              <span class="truncate w-full" x-text="cat"></span>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <div class="pt-1">
+        <button type="button" @click="showFilterCategoryModal = false" class="w-full py-2 border border-slate-300 rounded-xl text-slate-600 font-semibold hover:bg-slate-50 transition text-sm">取消</button>
+      </div>
     </div>
   </div>
 
@@ -519,11 +620,10 @@
         </button>
       </div>
 
-      <!-- 模式 1：選擇年份 (符合你要求的 3 行結構：前3年 | 今年 | 後3年) -->
+      <!-- 模式 1：選擇年份 -->
       <div x-show="pickerMode === 'year'" class="space-y-3">
         <div class="text-center font-bold text-slate-700 text-sm">選擇年份</div>
         <div class="space-y-2">
-          <!-- 第一行：前三年 -->
           <div class="grid grid-cols-3 gap-2">
             <template x-for="y in pickerPrev3Years" :key="y">
               <div @click="selectPickerYear(y)"
@@ -533,7 +633,6 @@
               </div>
             </template>
           </div>
-          <!-- 第二行：今年 (獨立一行) -->
           <div>
             <div @click="selectPickerYear(pickerCurrentYearStr)"
                  class="py-3 rounded-xl border text-sm font-bold text-center cursor-pointer transition select-none flex items-center justify-center w-full"
@@ -541,7 +640,6 @@
                  x-text="pickerCurrentYearStr">
             </div>
           </div>
-          <!-- 第三行：後三年 -->
           <div class="grid grid-cols-3 gap-2">
             <template x-for="y in pickerNext3Years" :key="y">
               <div @click="selectPickerYear(y)"
@@ -554,7 +652,7 @@
         </div>
       </div>
 
-      <!-- 模式 2：選擇月份 (三行四列 3x4) -->
+      <!-- 模式 2：選擇月份 -->
       <div x-show="pickerMode === 'month'" class="space-y-3">
         <div class="text-center font-bold text-slate-700 text-sm" x-text="pickerYear + ' 年'"></div>
         <div class="grid grid-cols-4 gap-2 text-center">
@@ -568,7 +666,7 @@
         </div>
       </div>
 
-      <!-- 模式 3：選擇日期 (傳統月曆網格) -->
+      <!-- 模式 3：選擇日期 -->
       <div x-show="pickerMode === 'day'" class="space-y-3">
         <div class="flex justify-between items-center px-1">
           <button @click="pickerChangeMonthOffset(-1)" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition"><i class="fa-solid fa-chevron-left text-xs"></i></button>
@@ -600,7 +698,6 @@
         </div>
       </div>
 
-      <!-- 無論在哪個模式 (年/月/日)，底部都只保留一個「取消」按鈕供關閉元件用 -->
       <div class="pt-1">
         <button type="button" @click="showDatePickerModal = false" class="w-full py-2 border border-slate-300 rounded-xl text-slate-600 font-semibold hover:bg-slate-50 transition text-sm">取消</button>
       </div>
@@ -683,6 +780,7 @@
         timeDimension: 'month',
         yearSummaryMode: 'category',
         monthlyFilterCategory: 'all',
+        filterCategoryTab: 'expense', // 篩選分類彈跳視窗內的切換分頁：'expense' 或 'income'
         
         selectedYear: currentYearStr,
         selectedMonth: currentMonthStr,
@@ -727,6 +825,33 @@
 
         showCategoryPickerModal: false,
         showCurrencyPickerModal: false,
+        showFilterYearModal: false,
+        showFilterMonthModal: false,
+        showFilterCategoryModal: false,
+
+        openFilterYearModal() {
+          this.showFilterYearModal = true;
+        },
+        selectFilterYear(y) {
+          this.selectedYear = y;
+          this.showFilterYearModal = false;
+        },
+
+        openFilterMonthModal() {
+          this.showFilterMonthModal = true;
+        },
+        selectFilterMonth(m) {
+          this.selectedMonth = m;
+          this.showFilterMonthModal = false;
+        },
+
+        openFilterCategoryModal() {
+          this.showFilterCategoryModal = true;
+        },
+        selectFilterCategory(cat) {
+          this.monthlyFilterCategory = cat;
+          this.showFilterCategoryModal = false;
+        },
 
         openCategoryPickerModal() {
           this.showCategoryPickerModal = true;
