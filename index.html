@@ -70,13 +70,13 @@
     </div>
   </div>
 
-  <!-- 頂部導覽列 -->
-  <header class="bg-emerald-600 text-white shadow-md">
+  <!-- 頂部導覽列：點選左上角「帳本」無縫重新整理資料 -->
+  <header class="bg-emerald-600 text-white shadow-md select-none">
     <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-      <div class="flex items-center space-x-3">
+      <button type="button" @click="refreshApp()" class="flex items-center space-x-3 cursor-pointer hover:opacity-90 transition focus:outline-none">
         <i class="fa-solid fa-wallet text-2xl"></i>
         <h1 class="text-xl font-bold tracking-wide">帳本</h1>
-      </div>
+      </button>
     </div>
   </header>
 
@@ -1028,6 +1028,12 @@
           if (this.availableYears.length > 0 && !this.availableYears.includes(this.selectedYear)) {
             this.selectedYear = this.availableYears[0];
           }
+        },
+
+        // 點選左上角「帳本」時執行的無縫重新整理方法
+        async refreshApp() {
+          await this.loadSupabaseData();
+          this.showToast('資料已重新整理', 'info');
         },
 
         // 啟動 Realtime 即時雙向同步監聽
