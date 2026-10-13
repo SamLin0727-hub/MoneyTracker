@@ -10,6 +10,8 @@
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     [x-cloak] { display: none !important; }
     
@@ -73,7 +75,7 @@
     <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
       <div class="flex items-center space-x-3">
         <i class="fa-solid fa-wallet text-2xl"></i>
-        <h1 class="text-xl font-bold tracking-wide">個人記帳與財務分析</h1>
+        <h1 class="text-xl font-bold tracking-wide">個人記帳與財務分析 (Supabase 即時同步)</h1>
       </div>
     </div>
   </header>
@@ -181,18 +183,18 @@
 
         <!-- 視圖 1：交易紀錄清單 -->
         <div x-show="trackerSubView === 'list'" class="divide-y divide-slate-100 w-full">
-          <template x-for="item in filteredPeriodRecords" :key="item.ID || item.id">
+          <template x-for="item in filteredPeriodRecords" :key="item.id">
             <div class="py-3 flex justify-between items-center hover:bg-slate-50 px-1 sm:px-2 rounded-lg transition gap-2">
               <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
-                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold" :class="getCategoryStyle(item.類別 || item.category).bgClass">
-                  <i :class="getCategoryStyle(item.類別 || item.category).icon"></i>
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold" :class="getCategoryStyle(item.category).bgClass">
+                  <i :class="getCategoryStyle(item.category).icon"></i>
                 </div>
                 <div class="min-w-0">
                   <div class="flex items-center space-x-1.5 sm:space-x-2 flex-wrap">
-                    <span class="font-bold text-slate-800 text-sm sm:text-base truncate" x-text="item.類別 || item.category"></span>
-                    <span class="text-[10px] sm:text-xs px-1.5 py-0.5 rounded text-slate-500 bg-slate-100 flex-shrink-0" x-text="formatDateStr(item.日期 || item.date)"></span>
+                    <span class="font-bold text-slate-800 text-sm sm:text-base truncate" x-text="item.category"></span>
+                    <span class="text-[10px] sm:text-xs px-1.5 py-0.5 rounded text-slate-500 bg-slate-100 flex-shrink-0" x-text="formatDateStr(item.date)"></span>
                   </div>
-                  <p class="text-xs text-slate-400 truncate" x-text="item.備註 || item.note || '無備註'"></p>
+                  <p class="text-xs text-slate-400 truncate" x-text="item.note || '無備註'"></p>
                 </div>
               </div>
 
@@ -200,8 +202,8 @@
               <div class="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
                 <div class="text-right">
                   <div class="font-bold text-sm sm:text-base" :class="isExpense(item) ? 'text-rose-500' : 'text-emerald-600'" x-text="formatAmount(item)"></div>
-                  <template x-if="(item.幣別 || item.currency) && (item.幣別 || item.currency) !== 'TWD'">
-                    <div class="text-[10px] text-slate-400" x-text="(item.幣別 || item.currency) + ' ' + Math.abs(Number(item.金額 || item.amount || 0))"></div>
+                  <template x-if="item.currency && item.currency !== 'TWD'">
+                    <div class="text-[10px] text-slate-400" x-text="item.currency + ' ' + Math.abs(Number(item.amount || 0))"></div>
                   </template>
                 </div>
                 <div class="flex space-x-1 text-slate-400">
@@ -489,7 +491,7 @@
     </div>
   </div>
 
-  <!-- 統計分析：篩選分類選擇專屬彈跳視窗 (加入支出/收入切換分頁與 一行三個) -->
+  <!-- 統計分析：篩選分類選擇專屬彈跳視窗 -->
   <div x-show="showFilterCategoryModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center p-4 z-[65]" x-cloak>
     <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-5 space-y-4 border border-slate-100 max-h-[85vh] overflow-y-auto">
       <div class="flex justify-between items-center border-b pb-2">
@@ -551,7 +553,7 @@
     </div>
   </div>
 
-  <!-- 分類選擇專屬彈跳視窗 (Popup) -->
+  <!-- 分類選擇專屬彈跳視窗 -->
   <div x-show="showCategoryPickerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center p-4 z-[65]" x-cloak>
     <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-5 space-y-4 border border-slate-100 max-h-[85vh] overflow-y-auto">
       <div class="flex justify-between items-center border-b pb-2">
@@ -580,7 +582,7 @@
     </div>
   </div>
 
-  <!-- 幣別選擇專屬彈跳視窗 (Popup) -->
+  <!-- 幣別選擇專屬彈跳視窗 -->
   <div x-show="showCurrencyPickerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center p-4 z-[65]" x-cloak>
     <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-5 space-y-4 border border-slate-100">
       <div class="flex justify-between items-center border-b pb-2">
@@ -608,11 +610,10 @@
     </div>
   </div>
 
-  <!-- 三行點選式日期選擇專屬彈跳視窗 (Popup) -->
+  <!-- 日期選擇專屬彈跳視窗 -->
   <div x-show="showDatePickerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center p-4 z-[65]" x-cloak>
     <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-5 space-y-4 border border-slate-100">
       
-      <!-- 頂部切換與標題 -->
       <div class="flex justify-between items-center border-b pb-2">
         <div class="flex items-center space-x-2">
           <button type="button" @click="pickerMode = 'day'" :class="pickerMode === 'day' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'" class="px-2.5 py-1 rounded-lg text-xs font-bold transition">日</button>
@@ -624,7 +625,6 @@
         </button>
       </div>
 
-      <!-- 模式 1：選擇年份（3 1 3 排版，今年獨佔一列） -->
       <div x-show="pickerMode === 'year'" class="space-y-3">
         <div class="text-center font-bold text-slate-700 text-sm">選擇年份 (限前後3年內)</div>
         <div class="grid grid-cols-3 gap-2">
@@ -642,7 +642,6 @@
         </div>
       </div>
 
-      <!-- 模式 2：選擇月份 -->
       <div x-show="pickerMode === 'month'" class="space-y-3">
         <div class="text-center font-bold text-slate-700 text-sm" x-text="pickerYear + ' 年'"></div>
         <div class="grid grid-cols-4 gap-2 text-center">
@@ -656,7 +655,6 @@
         </div>
       </div>
 
-      <!-- 模式 3：選擇日期 -->
       <div x-show="pickerMode === 'day'" class="space-y-3">
         <div class="flex justify-between items-center px-1">
           <button @click="pickerChangeMonthOffset(-1)" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition"><i class="fa-solid fa-chevron-left text-xs"></i></button>
@@ -759,6 +757,11 @@
   </div>
 
   <script>
+    // 初始化 Supabase 客戶端
+    const SUPABASE_URL = 'https://owmwindoecegmjnlgble.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93bXdpbmRlb2NlZ21qbmxnYmxlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE4Mzg3NDAsImV4cCI6MjEwNzQxNDc0MH0.ZkzdaZmkKA_hi9Dr-shAFM2XzsNsjb7dR7Jh4tu8NZc';
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     function appData() {
       const now = new Date();
       const currentYearStr = now.getFullYear().toString();
@@ -775,7 +778,6 @@
         selectedYear: currentYearStr,
         selectedMonth: currentMonthStr,
         
-        webAppUrl: 'https://script.google.com/macros/s/AKfycbwxyqVeM-LHKa1dIa2JF9H0xF7xCvhyUdpMdeiyk4JIri4y8qqKKFQ-cRuVmuYQ7w5rLQ/exec',
         searchQuery: '',
         
         incomeCategories: ['薪水', '兼職', '獎金', '紅包', '中獎'],
@@ -999,28 +1001,26 @@
         },
 
         async initApp() {
-          await this.loadAllYearsData();
+          await this.loadSupabaseData();
+          this.initRealtimeSync();
         },
 
-        async loadAllYearsData() {
+        // 從 Supabase 載入所有記帳資料
+        async loadSupabaseData() {
           this.loadingText = '資料載入中...';
           this.loading = true;
-          let allRecords = [];
-          const cy = new Date().getFullYear();
 
           try {
-            for (let y = cy - 3; y <= cy + 3; y++) {
-              try {
-                const res = await fetch(`${this.webAppUrl}?action=getData&year=${y}`);
-                const data = await res.json();
-                if (data && data.data && data.data.length > 0) {
-                  allRecords = allRecords.concat(data.data);
-                }
-              } catch (err) {}
-            }
-            this.records = allRecords;
+            const { data, error } = await supabaseClient
+              .from('MoneyTracker')
+              .select('*')
+              .order('date', { ascending: false });
+
+            if (error) throw error;
+            this.records = data || [];
           } catch (e) {
-            console.error('整體載入失敗', e);
+            console.error('自 Supabase 載入失敗', e);
+            this.showToast('載入資料失敗，請檢查連線', 'danger');
           } finally {
             this.loading = false;
           }
@@ -1028,6 +1028,32 @@
           if (this.availableYears.length > 0 && !this.availableYears.includes(this.selectedYear)) {
             this.selectedYear = this.availableYears[0];
           }
+        },
+
+        // 啟動 Realtime 即時雙向同步監聽
+        initRealtimeSync() {
+          supabaseClient
+            .channel('public:MoneyTracker')
+            .on(
+              'postgres_changes',
+              { event: '*', schema: 'public', table: 'MoneyTracker' },
+              (payload) => {
+                if (payload.eventType === 'INSERT') {
+                  // 避免重複推入自己剛新增的資料
+                  if (!this.records.some(r => r.id === payload.new.id)) {
+                    this.records.unshift(payload.new);
+                  }
+                } else if (payload.eventType === 'DELETE') {
+                  this.records = this.records.filter(r => r.id !== payload.old.id);
+                } else if (payload.eventType === 'UPDATE') {
+                  const index = this.records.findIndex(r => r.id === payload.new.id);
+                  if (index !== -1) {
+                    this.records[index] = payload.new;
+                  }
+                }
+              }
+            )
+            .subscribe();
         },
 
         getCategoryStyle(category) {
@@ -1051,7 +1077,7 @@
           const yearsSet = new Set();
           
           this.records.forEach(r => {
-            const dateStr = this.formatDateStr(r.日期 || r.date);
+            const dateStr = this.formatDateStr(r.date);
             if (dateStr && dateStr.length >= 4) {
               const yStr = dateStr.substring(0, 4);
               const yNum = parseInt(yStr, 10);
@@ -1099,14 +1125,14 @@
         },
 
         isExpense(item) {
-          const type = item.類型 || item.type;
-          const amt = Number(item.金額 || item.amount || 0);
+          const type = item.type;
+          const amt = Number(item.amount || 0);
           return type === 'expense' || amt < 0;
         },
 
         getConvertedAmount(item) {
-          const rawAmt = Math.abs(Number(item.金額 || item.amount || 0));
-          const rate = Number(item.匯率 || item.exchangeRate || 1);
+          const rawAmt = Math.abs(Number(item.amount || 0));
+          const rate = Number(item.exchangeRate || 1);
           return Math.round(rawAmt * rate);
         },
 
@@ -1120,15 +1146,15 @@
           if (!prefix) return [];
 
           return this.records.filter(r => {
-            const dateStr = this.formatDateStr(r.日期 || r.date);
+            const dateStr = this.formatDateStr(r.date);
             return dateStr.startsWith(prefix);
           }).sort((a, b) => {
-            const dateA = this.formatDateStr(a.日期 || a.date);
-            const dateB = this.formatDateStr(b.日期 || b.date);
+            const dateA = this.formatDateStr(a.date);
+            const dateB = this.formatDateStr(b.date);
             if (dateA !== dateB) {
               return dateB.localeCompare(dateA);
             }
-            return (b.ID || b.id || 0) - (a.ID || a.id || 0);
+            return (b.created_at || '').localeCompare(a.created_at || '');
           });
         },
 
@@ -1136,8 +1162,8 @@
           if (!this.searchQuery) return this.periodRecords;
           const q = this.searchQuery.toLowerCase();
           return this.periodRecords.filter(r => 
-            (r.類別 || r.category || '').toLowerCase().includes(q) ||
-            (r.備註 || r.note || '').toLowerCase().includes(q)
+            (r.category || '').toLowerCase().includes(q) ||
+            (r.note || '').toLowerCase().includes(q)
           );
         },
 
@@ -1162,7 +1188,7 @@
           
           return this.records
             .filter(r => {
-              const dateStr = this.formatDateStr(r.日期 || r.date);
+              const dateStr = this.formatDateStr(r.date);
               if (!dateStr) return false;
               return dateStr <= (this.timeDimension === 'month' ? `${prefix}-31` : `${prefix}-12-31`);
             })
@@ -1181,13 +1207,13 @@
           });
 
           this.periodRecords.forEach(r => {
-            const cat = r.類別 || r.category || '';
+            const cat = r.category || '';
             
             if (this.monthlyFilterCategory !== 'all' && cat !== this.monthlyFilterCategory) {
               return;
             }
 
-            const dateStr = this.formatDateStr(r.日期 || r.date);
+            const dateStr = this.formatDateStr(r.date);
             if (dateStr && dateStr.length >= 7) {
               const m = dateStr.substring(5, 7);
               if (monthMap[m]) {
@@ -1223,7 +1249,7 @@
 
           this.periodRecords.forEach(r => {
             if (!this.isExpense(r)) {
-              const cat = r.類別 || r.category || '未分類';
+              const cat = r.category || '未分類';
               const converted = this.getConvertedAmount(r);
               map[cat] = (map[cat] || 0) + converted;
             }
@@ -1244,7 +1270,7 @@
 
           this.periodRecords.forEach(r => {
             if (this.isExpense(r)) {
-              const cat = r.類別 || r.category || '未分類';
+              const cat = r.category || '未分類';
               const converted = this.getConvertedAmount(r);
               map[cat] = (map[cat] || 0) + converted;
             }
@@ -1280,17 +1306,17 @@
 
         openEditModal(item) {
           this.isAddingNew = false;
-          const dateStr = this.formatDateStr(item.日期 || item.date);
+          const dateStr = this.formatDateStr(item.date);
 
           this.editForm = {
-            id: item.ID || item.id,
+            id: item.id,
             type: this.isExpense(item) ? 'expense' : 'income',
             date: dateStr,
-            category: item.類別 || item.category,
-            amount: Math.abs(Number(item.金額 || item.amount || 0)),
-            currency: item.幣別 || item.currency || 'TWD',
-            exchangeRate: item.匯率 !== undefined && item.匯率 !== '' ? Number(item.匯率) : (item.exchangeRate !== undefined && item.exchangeRate !== '' ? Number(item.exchangeRate) : 1),
-            note: item.備註 || item.note || ''
+            category: item.category,
+            amount: Math.abs(Number(item.amount || 0)),
+            currency: item.currency || 'TWD',
+            exchangeRate: item.exchangeRate !== undefined && item.exchangeRate !== '' ? Number(item.exchangeRate) : 1,
+            note: item.note || ''
           };
           this.showEditModal = true;
         },
@@ -1303,6 +1329,7 @@
           }
         },
 
+        // 新增紀錄（透過 Supabase，id 交由資料庫自動產生 uuid）
         async addRecord() {
           if (this.loading) return;
           if (!this.editForm.amount || this.editForm.amount <= 0) return;
@@ -1312,36 +1339,11 @@
 
           const addedYear = this.editForm.date.substring(0, 4);
           const addedMonth = this.editForm.date.substring(5, 7);
-          const newId = Date.now().toString();
 
           const finalCurrency = this.editForm.currency || 'TWD';
           const finalRate = finalCurrency === 'TWD' ? 1 : (Number(this.editForm.exchangeRate) || 1);
 
-          const localRecord = {
-            ID: newId,
-            id: newId,
-            類型: this.editForm.type,
-            type: this.editForm.type,
-            日期: this.editForm.date,
-            date: this.editForm.date,
-            類別: this.editForm.category,
-            category: this.editForm.category,
-            金額: Number(this.editForm.amount),
-            amount: Number(this.editForm.amount),
-            幣別: finalCurrency,
-            currency: finalCurrency,
-            匯率: finalRate,
-            exchangeRate: finalRate,
-            備註: this.editForm.note,
-            note: this.editForm.note
-          };
-
-          this.records.unshift(localRecord);
-          this.selectedYear = addedYear;
-          this.selectedMonth = addedMonth;
-
-          const newItem = {
-            action: 'add',
+          const recordData = {
             type: this.editForm.type,
             date: this.editForm.date,
             category: this.editForm.category,
@@ -1352,15 +1354,21 @@
           };
 
           try {
-            await fetch(this.webAppUrl, {
-              method: 'POST',
-              mode: 'no-cors',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(newItem)
-            });
+            const { data, error } = await supabaseClient
+              .from('MoneyTracker')
+              .insert([recordData])
+              .select();
+
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+              this.records.unshift(data[0]);
+            }
+            this.selectedYear = addedYear;
+            this.selectedMonth = addedMonth;
             this.showToast('紀錄新增成功！', 'success');
           } catch (e) {
-            console.error('寫入 API 失敗', e);
+            console.error('寫入 Supabase 失敗', e);
             this.showToast('寫入失敗，請稍後再試', 'danger');
           } finally {
             this.loading = false;
@@ -1368,6 +1376,7 @@
           }
         },
 
+        // 更新紀錄
         async updateRecord() {
           if (this.loading) return;
           this.loadingText = '紀錄更新中...';
@@ -1375,47 +1384,36 @@
 
           const finalCurrency = this.editForm.currency || 'TWD';
           const finalRate = finalCurrency === 'TWD' ? 1 : (Number(this.editForm.exchangeRate) || 1);
+          const calcAmount = Number(this.editForm.amount);
 
-          const idx = this.records.findIndex(r => (r.ID || r.id) === this.editForm.id);
-          if (idx !== -1) {
-            const calcAmount = Number(this.editForm.amount);
-
-            this.records[idx].日期 = this.editForm.date;
-            this.records[idx].date = this.editForm.date;
-            this.records[idx].類型 = this.editForm.type;
-            this.records[idx].type = this.editForm.type;
-            this.records[idx].類別 = this.editForm.category;
-            this.records[idx].category = this.editForm.category;
-            this.records[idx].金額 = calcAmount;
-            this.records[idx].amount = calcAmount;
-            this.records[idx].幣別 = finalCurrency;
-            this.records[idx].currency = finalCurrency;
-            this.records[idx].匯率 = finalRate;
-            this.records[idx].exchangeRate = finalRate;
-            this.records[idx].備註 = this.editForm.note;
-            this.records[idx].note = this.editForm.note;
-          }
+          const updateData = {
+            type: this.editForm.type,
+            date: this.editForm.date,
+            category: this.editForm.category,
+            amount: calcAmount,
+            currency: finalCurrency,
+            exchangeRate: finalRate,
+            note: this.editForm.note
+          };
 
           try {
-            await fetch(this.webAppUrl, {
-              method: 'POST',
-              mode: 'no-cors',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
-                action: 'update', 
-                id: this.editForm.id,
-                type: this.editForm.type,
-                date: this.editForm.date,
-                category: this.editForm.category,
-                amount: Number(this.editForm.amount),
-                currency: finalCurrency,
-                exchangeRate: finalRate,
-                note: this.editForm.note
-              })
-            });
+            const { data, error } = await supabaseClient
+              .from('MoneyTracker')
+              .update(updateData)
+              .eq('id', this.editForm.id)
+              .select();
+
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+              const idx = this.records.findIndex(r => r.id === this.editForm.id);
+              if (idx !== -1) {
+                this.records[idx] = data[0];
+              }
+            }
             this.showToast('紀錄已成功更新！', 'info');
           } catch (e) {
-            console.error('更新失敗', e);
+            console.error('更新 Supabase 失敗', e);
             this.showToast('更新失敗，請稍後再試', 'danger');
           } finally {
             this.loading = false;
@@ -1428,26 +1426,26 @@
           this.showConfirmModal = true;
         },
 
+        // 刪除紀錄
         async confirmDeleteRecord() {
           this.showConfirmModal = false;
           const targetId = this.editForm.id;
-          const targetDate = this.editForm.date;
 
           this.loadingText = '紀錄刪除中...';
           this.loading = true;
 
-          this.records = this.records.filter(r => (r.ID || r.id) !== targetId);
-
           try {
-            await fetch(this.webAppUrl, {
-              method: 'POST',
-              mode: 'no-cors',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'delete', id: targetId, date: targetDate })
-            });
+            const { error } = await supabaseClient
+              .from('MoneyTracker')
+              .delete()
+              .eq('id', targetId);
+
+            if (error) throw error;
+
+            this.records = this.records.filter(r => r.id !== targetId);
             this.showToast('已成功刪除該筆紀錄！', 'danger');
           } catch (e) {
-            console.error('刪除失敗', e);
+            console.error('刪除 Supabase 失敗', e);
             this.showToast('刪除失敗，請稍後再試', 'danger');
           } finally {
             this.loading = false;
