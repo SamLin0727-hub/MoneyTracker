@@ -1066,7 +1066,7 @@
             if (upsertError) throw upsertError;
 
             this.deviceStatus = 'approved';
-            this.showToast(`解鎖成功！歡迎 ${matchedKey}`, 'success');
+            this.showToast(`解鎖成功！`, 'success');
             await this.loadSupabaseData();
             this.initRealtimeSync();
           } catch (e) {
