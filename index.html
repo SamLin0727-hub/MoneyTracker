@@ -37,6 +37,43 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen pb-24 overflow-x-hidden relative" x-data="appData()" x-init="initApp()">
 
+  <!-- 密碼解鎖 / 被拉黑畫面 -->
+  <div x-show="deviceStatus !== 'approved'" class="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4" x-cloak>
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 text-center space-y-5 border border-slate-100">
+      
+      <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto text-2xl shadow-inner"
+           :class="deviceStatus === 'rejected' ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'">
+        <i :class="deviceStatus === 'rejected' ? 'fa-solid fa-ban' : 'fa-solid fa-lock'"></i>
+      </div>
+
+      <div class="space-y-2">
+        <h2 class="text-xl font-bold text-slate-800" x-text="deviceStatus === 'rejected' ? '此裝置已被管理員拉黑' : '請輸入通關密碼解鎖'"></h2>
+        <p class="text-sm text-slate-500 leading-relaxed" x-text="deviceStatus === 'rejected' ? '存取權限已被封鎖，無法使用本系統。' : '輸入後台設定的通關密碼即可授權本裝置使用。'"></p>
+      </div>
+
+      <template x-if="deviceStatus !== 'rejected'">
+        <div class="space-y-3 text-left">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">裝置名稱或備註</label>
+            <input type="text" x-model="deviceName" placeholder="例如：我的iPhone、無痕視窗" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">通關密碼</label>
+            <input type="password" x-model="inputPassword" @keyup.enter="unlockWithPassword()" placeholder="請輸入密碼" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+          </div>
+          <button @click="unlockWithPassword()" :disabled="loading" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-lg shadow-emerald-200 transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-key"></i> 確認解鎖
+          </button>
+        </div>
+      </template>
+
+      <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-[11px] text-slate-400 break-all select-all font-mono text-left">
+        裝置識別: <span x-text="deviceToken"></span>
+      </div>
+
+    </div>
+  </div>
+
   <!-- 全螢幕 Locking Loading 遮罩 -->
   <div x-show="loading" 
        x-transition:enter="transition ease-out duration-200"
@@ -53,7 +90,7 @@
     </div>
   </div>
 
-  <!-- 中央置中 Toast 彈跳視窗訊息 -->
+  <!-- 中央置中 Toast 彈跳視窗訊息 (層級 z-[120]，確保高於解鎖畫面) -->
   <div x-show="toast.show" 
        x-transition:enter="transition ease-out duration-300 transform"
        x-transition:enter-start="opacity-0 scale-90"
@@ -61,7 +98,7 @@
        x-transition:leave="transition ease-in duration-200 transform"
        x-transition:leave-start="opacity-100 scale-100"
        x-transition:leave-end="opacity-0 scale-90"
-       class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+       class="fixed inset-0 z-[120] flex items-center justify-center p-4 pointer-events-none"
        x-cloak>
     <div class="flex items-center gap-3 px-6 py-3.5 rounded-2xl shadow-2xl text-white font-medium text-base pointer-events-auto backdrop-blur-md"
          :class="toast.type === 'danger' ? 'bg-rose-600/95 border border-rose-400/30' : (toast.type === 'info' ? 'bg-indigo-600/95 border border-indigo-400/30' : 'bg-emerald-600/95 border border-emerald-400/30')">
@@ -757,10 +794,18 @@
   </div>
 
   <script>
-    // 初始化 Supabase 客戶端
     const SUPABASE_URL = 'https://owmwindeocegmjnlgble.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93bXdpbmRlb2NlZ21qbmxnYmxlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE4Mzg3NDAsImV4cCI6MjEwNzQxNDc0MH0.ZkzdaZmkKA_hi9Dr-shAFM2XzsNsjb7dR7Jh4tu8NZc';
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    let deviceToken = localStorage.getItem('money_tracker_device_token');
+    if (!deviceToken) {
+      deviceToken = 'dev_' + crypto.randomUUID();
+      localStorage.setItem('money_tracker_device_token', deviceToken);
+    }
+
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { 'x-device-token': deviceToken } }
+    });
 
     function appData() {
       const now = new Date();
@@ -769,6 +814,11 @@
       const currentDayStr = String(now.getDate()).padStart(2, '0');
 
       return {
+        deviceToken: deviceToken,
+        deviceStatus: 'checking',
+        deviceName: '我的裝置',
+        inputPassword: '',
+
         trackerSubView: 'list',
         timeDimension: 'month',
         yearSummaryMode: 'category',
@@ -777,7 +827,6 @@
         
         selectedYear: currentYearStr,
         selectedMonth: currentMonthStr,
-        
         searchQuery: '',
         
         incomeCategories: ['薪水', '兼職', '獎金', '紅包', '中獎'],
@@ -820,57 +869,25 @@
         showFilterMonthModal: false,
         showFilterCategoryModal: false,
 
-        openFilterYearModal() {
-          this.showFilterYearModal = true;
-        },
-        selectFilterYear(y) {
-          this.selectedYear = y;
-          this.showFilterYearModal = false;
-        },
-
-        openFilterMonthModal() {
-          this.showFilterMonthModal = true;
-        },
-        selectFilterMonth(m) {
-          this.selectedMonth = m;
-          this.showFilterMonthModal = false;
-        },
-
-        openFilterCategoryModal() {
-          this.showFilterCategoryModal = true;
-        },
-        selectFilterCategory(cat) {
-          this.monthlyFilterCategory = cat;
-          this.showFilterCategoryModal = false;
-        },
-
-        openCategoryPickerModal() {
-          this.showCategoryPickerModal = true;
-        },
-
-        selectCategory(cat) {
-          this.editForm.category = cat;
-          this.showCategoryPickerModal = false;
-        },
-
-        openCurrencyPickerModal() {
-          this.showCurrencyPickerModal = true;
-        },
-
+        openFilterYearModal() { this.showFilterYearModal = true; },
+        selectFilterYear(y) { this.selectedYear = y; this.showFilterYearModal = false; },
+        openFilterMonthModal() { this.showFilterMonthModal = true; },
+        selectFilterMonth(m) { this.selectedMonth = m; this.showFilterMonthModal = false; },
+        openFilterCategoryModal() { this.showFilterCategoryModal = true; },
+        selectFilterCategory(cat) { this.monthlyFilterCategory = cat; this.showFilterCategoryModal = false; },
+        openCategoryPickerModal() { this.showCategoryPickerModal = true; },
+        selectCategory(cat) { this.editForm.category = cat; this.showCategoryPickerModal = false; },
+        openCurrencyPickerModal() { this.showCurrencyPickerModal = true; },
         selectCurrency(cur) {
           this.editForm.currency = cur;
-          if (cur === 'TWD') {
-            this.editForm.exchangeRate = 1;
-          }
+          if (cur === 'TWD') this.editForm.exchangeRate = 1;
           this.showCurrencyPickerModal = false;
         },
 
         get allowedPickerYears() {
           const cy = new Date().getFullYear();
           const years = [];
-          for (let y = cy - 3; y <= cy + 3; y++) {
-            years.push(String(y));
-          }
+          for (let y = cy - 3; y <= cy + 3; y++) years.push(String(y));
           return years;
         },
 
@@ -879,18 +896,11 @@
           const m = parseInt(this.pickerMonth, 10);
           const firstDayIndex = new Date(y, m - 1, 1).getDay();
           const totalDays = new Date(y, m, 0).getDate();
-
           const cells = [];
-          for (let i = 0; i < firstDayIndex; i++) {
-            cells.push({ key: 'p-empty-' + i, day: null, dateStr: '' });
-          }
+          for (let i = 0; i < firstDayIndex; i++) cells.push({ key: 'p-empty-' + i, day: null, dateStr: '' });
           for (let d = 1; d <= totalDays; d++) {
             const dStr = String(d).padStart(2, '0');
-            cells.push({
-              key: 'p-day-' + d,
-              day: dStr,
-              dateStr: `${this.pickerYear}-${this.pickerMonth}-${dStr}`
-            });
+            cells.push({ key: 'p-day-' + d, day: dStr, dateStr: `${this.pickerYear}-${this.pickerMonth}-${dStr}` });
           }
           return cells;
         },
@@ -911,7 +921,6 @@
           const cy = new Date().getFullYear();
           const yNum = parseInt(y, 10);
           if (yNum < cy - 3 || yNum > cy + 3) return;
-
           this.pickerYear = y;
           this.pickerMode = 'month';
         },
@@ -925,19 +934,10 @@
         pickerChangeMonthOffset(offset) {
           let mNum = parseInt(this.pickerMonth, 10) + offset;
           let yNum = parseInt(this.pickerYear, 10);
-          if (mNum > 12) {
-            mNum = 1;
-            yNum++;
-          } else if (mNum < 1) {
-            mNum = 12;
-            yNum--;
-          }
-
+          if (mNum > 12) { mNum = 1; yNum++; }
+          else if (mNum < 1) { mNum = 12; yNum--; }
           const cy = new Date().getFullYear();
-          if (yNum < cy - 3 || yNum > cy + 3) {
-            return;
-          }
-
+          if (yNum < cy - 3 || yNum > cy + 3) return;
           this.pickerYear = String(yNum);
           this.pickerMonth = String(mNum).padStart(2, '0');
           this.updatePickerDaysCount();
@@ -948,9 +948,7 @@
           const m = parseInt(this.pickerMonth, 10);
           const totalDays = new Date(y, m, 0).getDate();
           let dNum = parseInt(this.pickerDay, 10);
-          if (isNaN(dNum) || dNum > totalDays) {
-            dNum = totalDays;
-          }
+          if (isNaN(dNum) || dNum > totalDays) dNum = totalDays;
           this.pickerDay = String(dNum).padStart(2, '0');
           this.pickerSelectedDateStr = `${this.pickerYear}-${this.pickerMonth}-${this.pickerDay}`;
         },
@@ -969,16 +967,7 @@
         showEditModal: false,
         showConfirmModal: false,
         isAddingNew: false,
-        editForm: { 
-          id: '', 
-          type: 'expense', 
-          date: `${currentYearStr}-${currentMonthStr}-${currentDayStr}`, 
-          category: '飲食', 
-          amount: '', 
-          currency: 'TWD',
-          exchangeRate: 1,
-          note: '' 
-        },
+        editForm: { id: '', type: 'expense', date: `${currentYearStr}-${currentMonthStr}-${currentDayStr}`, category: '飲食', amount: '', currency: 'TWD', exchangeRate: 1, note: '' },
 
         showCalcModal: false,
         calcDisplay: '0',
@@ -995,21 +984,102 @@
           this.toast.message = message;
           this.toast.type = type;
           this.toast.show = true;
-          setTimeout(() => {
-            this.toast.show = false;
-          }, 3000);
+          setTimeout(() => { this.toast.show = false; }, 3000);
         },
 
         async initApp() {
-          await this.loadSupabaseData();
-          this.initRealtimeSync();
+          await this.checkDeviceStatus();
         },
 
-        // 從 Supabase 載入所有記帳資料
+        async checkDeviceStatus() {
+          this.loadingText = '檢查權限中...';
+          this.loading = true;
+          try {
+            const { data, error } = await supabaseClient
+              .from('device_permissions')
+              .select('status')
+              .eq('device_token', this.deviceToken)
+              .maybeSingle();
+
+            if (error) throw error;
+
+            if (data) {
+              if (data.status === 'approved') {
+                this.deviceStatus = 'approved';
+                await this.loadSupabaseData();
+                this.initRealtimeSync();
+              } else if (data.status === 'rejected') {
+                this.deviceStatus = 'rejected';
+              } else {
+                this.deviceStatus = 'unregistered';
+              }
+            } else {
+              this.deviceStatus = 'unregistered';
+            }
+          } catch (e) {
+            this.deviceStatus = 'unregistered';
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        async unlockWithPassword() {
+          if (!this.inputPassword || this.inputPassword.trim() === '') {
+            this.showToast('請輸入密碼', 'danger');
+            return;
+          }
+
+          this.loadingText = '正在驗證密碼...';
+          this.loading = true;
+
+          try {
+            const { data: matchedSettings, error: settingError } = await supabaseClient
+              .from('system_settings')
+              .select('id, key, value')
+              .eq('value', this.inputPassword.trim());
+
+            if (settingError) throw settingError;
+
+            if (!matchedSettings || matchedSettings.length === 0) {
+              this.showToast('密碼錯誤！', 'danger');
+              this.loading = false;
+              return;
+            }
+
+            const matchedSetting = matchedSettings[0];
+            const matchedKey = matchedSetting.key;
+            const matchedId = matchedSetting.id;
+
+            this.loadingText = '正在授權裝置...';
+            const userAgentInfo = navigator.userAgent;
+
+            const { error: upsertError } = await supabaseClient
+              .from('device_permissions')
+              .upsert([{ 
+                device_token: this.deviceToken, 
+                device_name: this.deviceName || '未命名裝置',
+                setting_id: matchedId, // 透過 Foreign Key 關聯
+                user_agent: userAgentInfo,
+                status: 'approved' 
+              }], { onConflict: 'device_token' });
+
+            if (upsertError) throw upsertError;
+
+            this.deviceStatus = 'approved';
+            this.showToast(`解鎖成功！歡迎 ${matchedKey}`, 'success');
+            await this.loadSupabaseData();
+            this.initRealtimeSync();
+          } catch (e) {
+            console.error(e);
+            this.showToast('授權過程發生錯誤', 'danger');
+          } finally {
+            this.loading = false;
+          }
+        },
+
         async loadSupabaseData() {
           this.loadingText = '資料載入中...';
           this.loading = true;
-
           try {
             const { data, error } = await supabaseClient
               .from('MoneyTracker')
@@ -1019,24 +1089,24 @@
             if (error) throw error;
             this.records = data || [];
           } catch (e) {
-            console.error('自 Supabase 載入失敗', e);
-            this.showToast('載入資料失敗，請檢查連線', 'danger');
+            this.showToast('載入資料失敗', 'danger');
           } finally {
             this.loading = false;
           }
-
           if (this.availableYears.length > 0 && !this.availableYears.includes(this.selectedYear)) {
             this.selectedYear = this.availableYears[0];
           }
         },
 
-        // 點選左上角「帳本」時執行的無縫重新整理方法
         async refreshApp() {
-          await this.loadSupabaseData();
-          this.showToast('資料已重新整理', 'info');
+          if (this.deviceStatus === 'approved') {
+            await this.loadSupabaseData();
+            this.showToast('資料已重新整理', 'info');
+          } else {
+            await this.checkDeviceStatus();
+          }
         },
 
-        // 啟動 Realtime 即時雙向同步監聽
         initRealtimeSync() {
           supabaseClient
             .channel('public:MoneyTracker')
@@ -1045,7 +1115,6 @@
               { event: '*', schema: 'public', table: 'MoneyTracker' },
               (payload) => {
                 if (payload.eventType === 'INSERT') {
-                  // 避免重複推入自己剛新增的資料
                   if (!this.records.some(r => r.id === payload.new.id)) {
                     this.records.unshift(payload.new);
                   }
@@ -1063,59 +1132,38 @@
         },
 
         getCategoryStyle(category) {
-          return this.categoryStyles[category] || {
-            icon: 'fa-solid fa-tags',
-            bgClass: 'bg-slate-100 text-slate-600',
-            textClass: 'text-slate-500'
-          };
+          return this.categoryStyles[category] || { icon: 'fa-solid fa-tags', bgClass: 'bg-slate-100 text-slate-600', textClass: 'text-slate-500' };
         },
 
         formatDateStr(str) {
           if (!str) return '';
           let cleanStr = String(str);
-          if (cleanStr.includes('T')) {
-            cleanStr = cleanStr.split('T')[0];
-          }
+          if (cleanStr.includes('T')) cleanStr = cleanStr.split('T')[0];
           return cleanStr.substring(0, 10);
         },
 
         get availableYears() {
           const yearsSet = new Set();
-          
           this.records.forEach(r => {
             const dateStr = this.formatDateStr(r.date);
             if (dateStr && dateStr.length >= 4) {
               const yStr = dateStr.substring(0, 4);
               const yNum = parseInt(yStr, 10);
               const cy = new Date().getFullYear();
-              if (!isNaN(yNum) && yNum >= cy - 3 && yNum <= cy + 3) {
-                yearsSet.add(yStr);
-              }
+              if (!isNaN(yNum) && yNum >= cy - 3 && yNum <= cy + 3) yearsSet.add(yStr);
             }
           });
-
           const nowY = String(new Date().getFullYear());
-          if (yearsSet.size === 0) {
-            yearsSet.add(nowY);
-          }
-
+          if (yearsSet.size === 0) yearsSet.add(nowY);
           return Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
         },
 
         get periodLabelText() {
-          if (this.timeDimension === 'month') {
-            return `${this.selectedYear}年${parseInt(this.selectedMonth, 10)}月`;
-          } else {
-            return `${this.selectedYear}年`;
-          }
+          return this.timeDimension === 'month' ? `${this.selectedYear}年${parseInt(this.selectedMonth, 10)}月` : `${this.selectedYear}年`;
         },
 
         get currentFilterPrefix() {
-          if (this.timeDimension === 'month') {
-            return `${this.selectedYear}-${this.selectedMonth}`;
-          } else {
-            return `${this.selectedYear}`;
-          }
+          return this.timeDimension === 'month' ? `${this.selectedYear}-${this.selectedMonth}` : `${this.selectedYear}`;
         },
 
         get editCategories() {
@@ -1125,15 +1173,11 @@
         setEditFormType(type) {
           this.editForm.type = type;
           const cats = type === 'expense' ? this.expenseCategories : this.incomeCategories;
-          if (!cats.includes(this.editForm.category)) {
-            this.editForm.category = cats[0];
-          }
+          if (!cats.includes(this.editForm.category)) this.editForm.category = cats[0];
         },
 
         isExpense(item) {
-          const type = item.type;
-          const amt = Number(item.amount || 0);
-          return type === 'expense' || amt < 0;
+          return item.type === 'expense' || Number(item.amount || 0) < 0;
         },
 
         getConvertedAmount(item) {
@@ -1150,16 +1194,13 @@
         get periodRecords() {
           const prefix = this.currentFilterPrefix;
           if (!prefix) return [];
-
           return this.records.filter(r => {
             const dateStr = this.formatDateStr(r.date);
             return dateStr.startsWith(prefix);
           }).sort((a, b) => {
             const dateA = this.formatDateStr(a.date);
             const dateB = this.formatDateStr(b.date);
-            if (dateA !== dateB) {
-              return dateB.localeCompare(dateA);
-            }
+            if (dateA !== dateB) return dateB.localeCompare(dateA);
             return (b.created_at || '').localeCompare(a.created_at || '');
           });
         },
@@ -1167,64 +1208,44 @@
         get filteredPeriodRecords() {
           if (!this.searchQuery) return this.periodRecords;
           const q = this.searchQuery.toLowerCase();
-          return this.periodRecords.filter(r => 
-            (r.category || '').toLowerCase().includes(q) ||
-            (r.note || '').toLowerCase().includes(q)
-          );
+          return this.periodRecords.filter(r => (r.category || '').toLowerCase().includes(q) || (r.note || '').toLowerCase().includes(q));
         },
 
         get periodIncome() {
-          return this.periodRecords
-            .filter(r => !this.isExpense(r))
-            .reduce((sum, r) => sum + this.getConvertedAmount(r), 0);
+          return this.periodRecords.filter(r => !this.isExpense(r)).reduce((sum, r) => sum + this.getConvertedAmount(r), 0);
         },
 
         get periodExpense() {
-          return this.periodRecords
-            .filter(r => this.isExpense(r))
-            .reduce((sum, r) => sum + this.getConvertedAmount(r), 0);
+          return this.periodRecords.filter(r => this.isExpense(r)).reduce((sum, r) => sum + this.getConvertedAmount(r), 0);
         },
 
-        get periodNet() {
-          return this.periodIncome - this.periodExpense;
-        },
+        get periodNet() { return this.periodIncome - this.periodExpense; },
 
         get cumulativeTotal() {
           let prefix = this.currentFilterPrefix;
-          
-          return this.records
-            .filter(r => {
-              const dateStr = this.formatDateStr(r.date);
-              if (!dateStr) return false;
-              return dateStr <= (this.timeDimension === 'month' ? `${prefix}-31` : `${prefix}-12-31`);
-            })
-            .reduce((sum, r) => {
-              const converted = this.getConvertedAmount(r);
-              return sum + (this.isExpense(r) ? -converted : converted);
-            }, 0);
+          return this.records.filter(r => {
+            const dateStr = this.formatDateStr(r.date);
+            if (!dateStr) return false;
+            return dateStr <= (this.timeDimension === 'month' ? `${prefix}-31` : `${prefix}-12-31`);
+          }).reduce((sum, r) => {
+            const converted = this.getConvertedAmount(r);
+            return sum + (this.isExpense(r) ? -converted : converted);
+          }, 0);
         },
 
         get monthlySummaryList() {
           if (this.timeDimension !== 'year') return [];
-
           const monthMap = {};
-          this.monthOptions.forEach(m => {
-            monthMap[m] = { income: 0, expense: 0, total: 0 };
-          });
+          this.monthOptions.forEach(m => { monthMap[m] = { income: 0, expense: 0, total: 0 }; });
 
           this.periodRecords.forEach(r => {
             const cat = r.category || '';
-            
-            if (this.monthlyFilterCategory !== 'all' && cat !== this.monthlyFilterCategory) {
-              return;
-            }
-
+            if (this.monthlyFilterCategory !== 'all' && cat !== this.monthlyFilterCategory) return;
             const dateStr = this.formatDateStr(r.date);
             if (dateStr && dateStr.length >= 7) {
               const m = dateStr.substring(5, 7);
               if (monthMap[m]) {
                 const converted = this.getConvertedAmount(r);
-                
                 if (this.isExpense(r)) {
                   monthMap[m].expense += converted;
                   monthMap[m].total -= converted;
@@ -1236,223 +1257,162 @@
             }
           });
 
-          return this.monthOptions.map(m => {
-            const inc = monthMap[m].income;
-            const exp = monthMap[m].expense;
-            return {
-              month: m,
-              income: inc,
-              expense: exp,
-              net: inc - exp,
-              total: monthMap[m].total
-            };
-          });
+          return this.monthOptions.map(m => ({
+            month: m,
+            income: monthMap[m].income,
+            expense: monthMap[m].expense,
+            net: monthMap[m].income - monthMap[m].expense,
+            total: monthMap[m].total
+          }));
         },
 
         get incomeCategorySummaryList() {
           const totalSum = this.periodIncome;
           const map = {};
-
           this.periodRecords.forEach(r => {
             if (!this.isExpense(r)) {
               const cat = r.category || '未分類';
-              const converted = this.getConvertedAmount(r);
-              map[cat] = (map[cat] || 0) + converted;
+              map[cat] = (map[cat] || 0) + this.getConvertedAmount(r);
             }
           });
-
-          return Object.keys(map)
-            .map(cat => {
-              const amt = map[cat];
-              const pct = totalSum > 0 ? ((amt / totalSum) * 100).toFixed(1) : 0;
-              return { category: cat, amount: amt, percent: pct };
-            })
-            .sort((a, b) => b.amount - a.amount);
+          return Object.keys(map).map(cat => ({
+            category: cat,
+            amount: map[cat],
+            percent: totalSum > 0 ? ((map[cat] / totalSum) * 100).toFixed(1) : 0
+          })).sort((a, b) => b.amount - a.amount);
         },
 
         get expenseCategorySummaryList() {
           const totalSum = this.periodExpense;
           const map = {};
-
           this.periodRecords.forEach(r => {
             if (this.isExpense(r)) {
               const cat = r.category || '未分類';
-              const converted = this.getConvertedAmount(r);
-              map[cat] = (map[cat] || 0) + converted;
+              map[cat] = (map[cat] || 0) + this.getConvertedAmount(r);
             }
           });
-
-          return Object.keys(map)
-            .map(cat => {
-              const amt = map[cat];
-              const pct = totalSum > 0 ? ((amt / totalSum) * 100).toFixed(1) : 0;
-              return { category: cat, amount: amt, percent: pct };
-            })
-            .sort((a, b) => b.amount - a.amount);
+          return Object.keys(map).map(cat => ({
+            category: cat,
+            amount: map[cat],
+            percent: totalSum > 0 ? ((map[cat] / totalSum) * 100).toFixed(1) : 0
+          })).sort((a, b) => b.amount - a.amount);
         },
 
         openAddModal() {
           this.isAddingNew = true;
-          const currentY = new Date().getFullYear().toString();
-          const currentM = String(new Date().getMonth() + 1).padStart(2, '0');
-          const currentD = String(new Date().getDate()).padStart(2, '0');
-
-          this.editForm = {
-            id: '',
-            type: 'expense',
-            date: `${currentY}-${currentM}-${currentD}`,
-            category: this.expenseCategories[0],
-            amount: '',
-            currency: 'TWD',
-            exchangeRate: 1,
-            note: ''
-          };
+          const cy = new Date().getFullYear().toString();
+          const cm = String(new Date().getMonth() + 1).padStart(2, '0');
+          const cd = String(new Date().getDate()).padStart(2, '0');
+          this.editForm = { id: '', type: 'expense', date: `${cy}-${cm}-${cd}`, category: this.expenseCategories[0], amount: '', currency: 'TWD', exchangeRate: 1, note: '' };
           this.showEditModal = true;
         },
 
         openEditModal(item) {
           this.isAddingNew = false;
-          const dateStr = this.formatDateStr(item.date);
-
           this.editForm = {
             id: item.id,
             type: this.isExpense(item) ? 'expense' : 'income',
-            date: dateStr,
+            date: this.formatDateStr(item.date),
             category: item.category,
             amount: Math.abs(Number(item.amount || 0)),
             currency: item.currency || 'TWD',
-            exchangeRate: item.exchangeRate !== undefined && item.exchangeRate !== '' ? Number(item.exchangeRate) : 1,
+            exchangeRate: item.exchangeRate !== undefined ? Number(item.exchangeRate) : 1,
             note: item.note || ''
           };
           this.showEditModal = true;
         },
 
         async handleModalSubmit() {
-          if (this.isAddingNew) {
-            await this.addRecord();
-          } else {
-            await this.updateRecord();
-          }
+          if (this.isAddingNew) await this.addRecord();
+          else await this.updateRecord();
         },
 
-        // 新增紀錄（透過 Supabase，id 交由資料庫自動產生 uuid）
         async addRecord() {
-          if (this.loading) return;
-          if (!this.editForm.amount || this.editForm.amount <= 0) return;
-          
+          if (this.loading || !this.editForm.amount || this.editForm.amount <= 0) return;
           this.loadingText = '新增儲存中...';
           this.loading = true;
-
           const addedYear = this.editForm.date.substring(0, 4);
           const addedMonth = this.editForm.date.substring(5, 7);
-
           const finalCurrency = this.editForm.currency || 'TWD';
           const finalRate = finalCurrency === 'TWD' ? 1 : (Number(this.editForm.exchangeRate) || 1);
-
-          const recordData = {
-            type: this.editForm.type,
-            date: this.editForm.date,
-            category: this.editForm.category,
-            amount: Number(this.editForm.amount),
-            currency: finalCurrency,
-            exchangeRate: finalRate,
-            note: this.editForm.note
-          };
 
           try {
             const { data, error } = await supabaseClient
               .from('MoneyTracker')
-              .insert([recordData])
+              .insert([{
+                type: this.editForm.type,
+                date: this.editForm.date,
+                category: this.editForm.category,
+                amount: Number(this.editForm.amount),
+                currency: finalCurrency,
+                exchangeRate: finalRate,
+                note: this.editForm.note
+              }])
               .select();
 
             if (error) throw error;
-
-            if (data && data.length > 0) {
-              this.records.unshift(data[0]);
-            }
+            if (data && data.length > 0) this.records.unshift(data[0]);
             this.selectedYear = addedYear;
             this.selectedMonth = addedMonth;
             this.showToast('紀錄新增成功！', 'success');
           } catch (e) {
-            console.error('寫入 Supabase 失敗', e);
-            this.showToast('寫入失敗，請稍後再試', 'danger');
+            this.showToast('寫入失敗', 'danger');
           } finally {
             this.loading = false;
             this.showEditModal = false;
           }
         },
 
-        // 更新紀錄
         async updateRecord() {
           if (this.loading) return;
           this.loadingText = '紀錄更新中...';
           this.loading = true;
-
           const finalCurrency = this.editForm.currency || 'TWD';
           const finalRate = finalCurrency === 'TWD' ? 1 : (Number(this.editForm.exchangeRate) || 1);
-          const calcAmount = Number(this.editForm.amount);
-
-          const updateData = {
-            type: this.editForm.type,
-            date: this.editForm.date,
-            category: this.editForm.category,
-            amount: calcAmount,
-            currency: finalCurrency,
-            exchangeRate: finalRate,
-            note: this.editForm.note
-          };
 
           try {
             const { data, error } = await supabaseClient
               .from('MoneyTracker')
-              .update(updateData)
+              .update({
+                type: this.editForm.type,
+                date: this.editForm.date,
+                category: this.editForm.category,
+                amount: Number(this.editForm.amount),
+                currency: finalCurrency,
+                exchangeRate: finalRate,
+                note: this.editForm.note
+              })
               .eq('id', this.editForm.id)
               .select();
 
             if (error) throw error;
-
             if (data && data.length > 0) {
               const idx = this.records.findIndex(r => r.id === this.editForm.id);
-              if (idx !== -1) {
-                this.records[idx] = data[0];
-              }
+              if (idx !== -1) this.records[idx] = data[0];
             }
-            this.showToast('紀錄已成功更新！', 'info');
+            this.showToast('紀錄已更新！', 'info');
           } catch (e) {
-            console.error('更新 Supabase 失敗', e);
-            this.showToast('更新失敗，請稍後再試', 'danger');
+            this.showToast('更新失敗', 'danger');
           } finally {
             this.loading = false;
             this.showEditModal = false;
           }
         },
 
-        promptDeleteRecord() {
-          if (this.isAddingNew) return;
-          this.showConfirmModal = true;
-        },
+        promptDeleteRecord() { if (!this.isAddingNew) this.showConfirmModal = true; },
 
-        // 刪除紀錄
         async confirmDeleteRecord() {
           this.showConfirmModal = false;
           const targetId = this.editForm.id;
-
-          this.loadingText = '紀錄刪除中...';
+          this.loadingText = '刪除中...';
           this.loading = true;
-
           try {
-            const { error } = await supabaseClient
-              .from('MoneyTracker')
-              .delete()
-              .eq('id', targetId);
-
+            const { error } = await supabaseClient.from('MoneyTracker').delete().eq('id', targetId);
             if (error) throw error;
-
             this.records = this.records.filter(r => r.id !== targetId);
-            this.showToast('已成功刪除該筆紀錄！', 'danger');
+            this.showToast('已刪除紀錄', 'danger');
           } catch (e) {
-            console.error('刪除 Supabase 失敗', e);
-            this.showToast('刪除失敗，請稍後再試', 'danger');
+            this.showToast('刪除失敗', 'danger');
           } finally {
             this.loading = false;
             this.showEditModal = false;
@@ -1460,82 +1420,50 @@
         },
 
         openCalculator() {
-          this.calcDisplay = this.editForm.amount !== '' && this.editForm.amount !== undefined ? String(this.editForm.amount) : '0';
+          this.calcDisplay = this.editForm.amount !== '' ? String(this.editForm.amount) : '0';
           this.calcExpression = '';
-          this.calcResetNext = true; 
+          this.calcResetNext = true;
           this.calcHasCalculated = true;
           this.showCalcModal = true;
         },
 
-        calcClear() {
-          this.calcDisplay = '0';
-          this.calcExpression = '';
-          this.calcResetNext = false;
-          this.calcHasCalculated = false;
-        },
-
+        calcClear() { this.calcDisplay = '0'; this.calcExpression = ''; this.calcResetNext = false; this.calcHasCalculated = false; },
         calcBackSpace() {
           if (this.calcResetNext) return;
-          if (this.calcDisplay.length > 1) {
-            this.calcDisplay = this.calcDisplay.slice(0, -1);
-          } else {
-            this.calcDisplay = '0';
-          }
+          this.calcDisplay = this.calcDisplay.length > 1 ? this.calcDisplay.slice(0, -1) : '0';
         },
-
         calcAppendNumber(num) {
-          if (this.calcResetNext) {
-            this.calcDisplay = num;
-            this.calcResetNext = false;
-          } else if (this.calcDisplay === '0') {
-            this.calcDisplay = num;
-          } else {
+          if (this.calcResetNext) { this.calcDisplay = num; this.calcResetNext = false; }
+          else if (this.calcDisplay === '0') { this.calcDisplay = num; }
+          else {
             if (num === '.' && this.calcDisplay.includes('.')) return;
             this.calcDisplay += num;
           }
-          if (this.calcExpression !== '') {
-            this.calcHasCalculated = false;
-          }
+          if (this.calcExpression !== '') this.calcHasCalculated = false;
         },
-
         calcAppendOperator(op) {
-          if (this.calcExpression !== '' && !this.calcResetNext) {
-            this.calcCalculate();
-          }
+          if (this.calcExpression !== '' && !this.calcResetNext) this.calcCalculate();
           this.calcExpression = this.calcDisplay + ' ' + op;
-          this.calcResetNext = true; 
+          this.calcResetNext = true;
           this.calcHasCalculated = false;
         },
-
         calcCalculate() {
           if (!this.calcExpression) return;
           try {
             const fullExpr = this.calcExpression + ' ' + this.calcDisplay;
             const sanitized = fullExpr.replace(/×/g, '*').replace(/÷/g, '/');
             const result = Function('"use strict";return (' + sanitized + ')')();
-            
-            if (!isFinite(result)) {
-              this.showToast('運算錯誤', 'danger');
-              this.calcClear();
-              return;
-            }
-
+            if (!isFinite(result)) { this.showToast('運算錯誤', 'danger'); this.calcClear(); return; }
             this.calcDisplay = String(parseFloat(Number(result).toFixed(6)));
             this.calcExpression = fullExpr + ' =';
             this.calcResetNext = true;
             this.calcHasCalculated = true;
-          } catch (e) {
-            this.showToast('格式錯誤', 'danger');
-            this.calcClear();
-          }
+          } catch (e) { this.showToast('格式錯誤', 'danger'); this.calcClear(); }
         },
-
         calcConfirm() {
           if (!this.calcHasCalculated && this.calcExpression !== '') return;
           const val = parseFloat(this.calcDisplay);
-          if (!isNaN(val) && val > 0) {
-            this.editForm.amount = parseFloat(val.toFixed(6));
-          }
+          if (!isNaN(val) && val > 0) this.editForm.amount = parseFloat(val.toFixed(6));
           this.showCalcModal = false;
         }
 
