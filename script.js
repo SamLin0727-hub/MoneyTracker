@@ -30,7 +30,7 @@ function appData() {
     // 動態判斷支出分類：group2 顯示 Pet咪咪，其餘顯示 Pet麻糬
     get expenseCategories() {
       if (this.currentAccountGroup === 'group2') {
-        return ['飲食', '住家', '交通', '購物', '醫療', '旅遊', 'Pet咪咪', '電信費', '電費', '水費', '瓦斯費', '手續費', '娛樂'];
+        return ['飲食', '住家', '交通', '購物', '醫療', '旅遊', 'Pet周伯通', '電信費', '電費', '水費', '瓦斯費', '手續費', '娛樂'];
       }
       return ['飲食', '住家', '交通', '購物', '醫療', '旅遊', 'Pet麻糬', '電信費', '電費', '水費', '瓦斯費', '手續費', '娛樂'];
     },
@@ -60,7 +60,7 @@ function appData() {
       };
 
       if (this.currentAccountGroup === 'group2') {
-        baseStyles['Pet咪咪'] = { icon: 'fa-solid fa-cat', bgClass: 'bg-orange-100 text-orange-600', textClass: 'text-orange-500' };
+        baseStyles['Pet周伯通'] = { icon: 'fa-solid fa-cat', bgClass: 'bg-orange-100 text-orange-600', textClass: 'text-orange-500' };
       } else {
         baseStyles['Pet麻糬'] = { icon: 'fa-solid fa-carrot', bgClass: 'bg-orange-100 text-orange-600', textClass: 'text-orange-500' };
       }
