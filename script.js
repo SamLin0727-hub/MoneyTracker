@@ -26,14 +26,18 @@ function appData() {
     searchQuery: '',
     
     incomeCategories: ['薪水', '兼職', '獎金', '紅包', '中獎'],
+    
+    // 動態判斷支出分類：group2 顯示 Pet咪咪，其餘顯示 Pet麻糬
     get expenseCategories() {
       if (this.currentAccountGroup === 'group2') {
         return ['飲食', '住家', '交通', '購物', '醫療', '旅遊', 'Pet咪咪', '電信費', '電費', '水費', '瓦斯費', '手續費', '娛樂'];
       }
       return ['飲食', '住家', '交通', '購物', '醫療', '旅遊', 'Pet麻糬', '電信費', '電費', '水費', '瓦斯費', '手續費', '娛樂'];
     },
+
     currencyOptions: ['TWD', 'USD', 'JPY', 'EUR', 'CNY', 'HKD', 'GBP', 'AUD', 'KRW'],
     
+    // 動態判斷圖示樣式：group2 採用貓咪圖示 (fa-cat)
     get categoryStyles() {
       const baseStyles = {
         '飲食': { icon: 'fa-solid fa-utensils', bgClass: 'bg-amber-100 text-amber-600', textClass: 'text-amber-500' },
@@ -85,9 +89,15 @@ function appData() {
     selectFilterMonth(m) { this.selectedMonth = m; this.showFilterMonthModal = false; },
     openFilterCategoryModal() { this.showFilterCategoryModal = true; },
     selectFilterCategory(cat) { this.monthlyFilterCategory = cat; this.showFilterCategoryModal = false; },
-    openCategoryPickerModal() { this.showCategoryPickerModal = true; },
+    openCategoryPickerModal() { 
+      if (!this.isAddingNew && !this.isCurrentEditable) return;
+      this.showCategoryPickerModal = true; 
+    },
     selectCategory(cat) { this.editForm.category = cat; this.showCategoryPickerModal = false; },
-    openCurrencyPickerModal() { this.showCurrencyPickerModal = true; },
+    openCurrencyPickerModal() { 
+      if (!this.isAddingNew && !this.isCurrentEditable) return;
+      this.showCurrencyPickerModal = true; 
+    },
     selectCurrency(cur) {
       this.editForm.currency = cur;
       if (cur === 'TWD') this.editForm.exchangeRate = 1;
@@ -116,6 +126,7 @@ function appData() {
     },
 
     openDatePickerModal() {
+      if (!this.isAddingNew && !this.isCurrentEditable) return;
       const parts = this.editForm.date.split('-');
       if (parts.length === 3) {
         this.pickerYear = parts[0];
@@ -177,6 +188,7 @@ function appData() {
     showEditModal: false,
     showConfirmModal: false,
     isAddingNew: false,
+    isCurrentEditable: true, // 用來判斷當前開啟的項目是否可編輯
     editForm: { id: '', type: 'expense', date: `${currentYearStr}-${currentMonthStr}-${currentDayStr}`, category: '飲食', amount: '', currency: 'TWD', exchangeRate: 1, note: '' },
 
     showCalcModal: false,
@@ -195,6 +207,11 @@ function appData() {
       this.toast.type = type;
       this.toast.show = true;
       setTimeout(() => { this.toast.show = false; }, 3000);
+    },
+
+    canEdit(item) {
+      if (!item || !item.auth_uid) return false;
+      return item.auth_uid === this.currentAuthUid;
     },
 
     async initApp() {
@@ -323,6 +340,7 @@ function appData() {
     },
 
     setEditFormType(type) {
+      if (!this.isAddingNew && !this.isCurrentEditable) return;
       this.editForm.type = type;
       const cats = type === 'expense' ? this.expenseCategories : this.incomeCategories;
       if (!cats.includes(this.editForm.category)) this.editForm.category = cats[0];
@@ -455,6 +473,7 @@ function appData() {
 
     openAddModal() {
       this.isAddingNew = true;
+      this.isCurrentEditable = true;
       const cy = new Date().getFullYear().toString();
       const cm = String(new Date().getMonth() + 1).padStart(2, '0');
       const cd = String(new Date().getDate()).padStart(2, '0');
@@ -474,6 +493,8 @@ function appData() {
 
     openEditModal(item) {
       this.isAddingNew = false;
+      this.isCurrentEditable = this.canEdit(item); // 判斷是否為本人，決定表單是否可編輯
+
       this.editForm = {
         id: item.id,
         type: this.isExpense(item) ? 'expense' : 'income',
@@ -488,6 +509,10 @@ function appData() {
     },
 
     async handleModalSubmit() {
+      if (!this.isCurrentEditable) {
+        this.showEditModal = false;
+        return;
+      }
       if (this.isAddingNew) await this.addRecord();
       else await this.updateRecord();
     },
@@ -532,7 +557,8 @@ function appData() {
     },
 
     async updateRecord() {
-      if (this.loading) return;
+      if (this.loading || !this.isCurrentEditable) return;
+
       this.loadingText = '紀錄更新中...';
       this.loading = true;
       const finalCurrency = this.editForm.currency || 'TWD';
@@ -551,6 +577,7 @@ function appData() {
             note: this.editForm.note
           })
           .eq('id', this.editForm.id)
+          .eq('auth_uid', this.currentAuthUid)
           .select('*, allowed_users(uid, name, account_group)');
 
         if (error) throw error;
@@ -567,15 +594,25 @@ function appData() {
       }
     },
 
-    promptDeleteRecord() { if (!this.isAddingNew) this.showConfirmModal = true; },
+    promptDeleteRecord() { 
+      if (!this.isAddingNew && this.isCurrentEditable) this.showConfirmModal = true; 
+    },
 
     async confirmDeleteRecord() {
       this.showConfirmModal = false;
       const targetId = this.editForm.id;
+
+      if (!this.isCurrentEditable) return;
+
       this.loadingText = '刪除中...';
       this.loading = true;
       try {
-        const { error } = await supabaseClient.from('MoneyTracker').delete().eq('id', targetId);
+        const { error } = await supabaseClient
+          .from('MoneyTracker')
+          .delete()
+          .eq('id', targetId)
+          .eq('auth_uid', this.currentAuthUid);
+
         if (error) throw error;
         this.records = this.records.filter(r => r.id !== targetId);
         this.showToast('已刪除紀錄', 'danger');
@@ -588,6 +625,7 @@ function appData() {
     },
 
     openCalculator() {
+      if (!this.isAddingNew && !this.isCurrentEditable) return;
       this.calcDisplay = this.editForm.amount !== '' ? String(this.editForm.amount) : '0';
       this.calcExpression = '';
       this.calcResetNext = true;

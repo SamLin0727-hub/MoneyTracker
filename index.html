@@ -175,7 +175,11 @@
         <div x-show="trackerSubView === 'list'" class="divide-y divide-slate-100 w-full">
           <template x-for="item in filteredPeriodRecords" :key="item.id">
             <div class="py-3 flex justify-between items-center hover:bg-slate-50 px-1 sm:px-2 rounded-lg transition gap-2">
-              <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
+              
+              <!-- 左側點擊或檢視區塊：若是本人可點擊開啟編輯，若非本人點擊則彈出提示或開啟唯讀 -->
+              <div @click="canEdit(item) ? openEditModal(item) : showToast('權限不足：您只能檢視或編輯自己新增的紀錄', 'danger')" 
+                   class="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-grow cursor-pointer" 
+                   :title="canEdit(item) ? '點擊編輯' : '僅限建立者編輯 (點擊檢視)'">
                 <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold" :class="getCategoryStyle(item.category).bgClass">
                   <i :class="getCategoryStyle(item.category).icon"></i>
                 </div>
@@ -188,7 +192,7 @@
                 </div>
               </div>
 
-              <!-- 右側金額與下方小字註記 -->
+              <!-- 右側金額與動作按鈕 -->
               <div class="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
                 <div class="text-right">
                   <div class="font-bold text-sm sm:text-base" :class="isExpense(item) ? 'text-rose-500' : 'text-emerald-600'" x-text="formatAmount(item)"></div>
@@ -197,9 +201,19 @@
                   </template>
                 </div>
                 <div class="flex space-x-1 text-slate-400">
-                  <button @click="openEditModal(item)" :disabled="loading" class="p-1 sm:p-1.5 hover:text-indigo-600 rounded transition disabled:opacity-50 disabled:cursor-not-allowed">
-                    <i class="fa-solid fa-pen"></i>
-                  </button>
+                  <!-- 當前使用者可編輯時：顯示編輯圖示 -->
+                  <template x-if="canEdit(item)">
+                    <button @click="openEditModal(item)" :disabled="loading" class="p-1 sm:p-1.5 hover:text-indigo-600 rounded transition disabled:opacity-50 disabled:cursor-not-allowed" title="編輯紀錄">
+                      <i class="fa-solid fa-pen"></i>
+                    </button>
+                  </template>
+
+                  <!-- 非原建立者：顯示灰階鎖定圖示 -->
+                  <template x-if="!canEdit(item)">
+                    <span @click="openEditModal(item)" class="p-1 sm:p-1.5 text-slate-400 hover:text-slate-600 cursor-pointer" title="點擊檢視紀錄 (唯讀)">
+                      <i class="fa-solid fa-lock text-xs"></i>
+                    </span>
+                  </template>
                 </div>
               </div>
             </div>
@@ -338,9 +352,10 @@
   <div x-show="showEditModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex justify-center items-center p-4 z-50" x-cloak>
     <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-5 sm:p-6 space-y-4 box-border relative max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center border-b pb-2">
-        <h3 class="font-bold text-lg text-slate-700" x-text="isAddingNew ? '新增交易紀錄' : '編輯交易紀錄'"></h3>
+        <h3 class="font-bold text-lg text-slate-700">交易紀錄</h3>
         <div class="flex items-center space-x-2">
-          <button type="button" @click="promptDeleteRecord()" :disabled="loading || isAddingNew" x-show="!isAddingNew" class="text-rose-400 hover:text-rose-600 p-1 disabled:opacity-50 transition" title="刪除此紀錄">
+          <!-- 只有本人且非新增狀態才顯示刪除按鈕 -->
+          <button type="button" @click="promptDeleteRecord()" :disabled="loading || isAddingNew || !isCurrentEditable" x-show="!isAddingNew && isCurrentEditable" class="text-rose-400 hover:text-rose-600 p-1 disabled:opacity-50 transition" title="刪除此紀錄">
             <i class="fa-solid fa-trash text-base"></i>
           </button>
         </div>
@@ -350,7 +365,7 @@
         
         <div>
           <label class="block text-xs font-semibold text-slate-500 mb-1">收支類型</label>
-          <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl w-full">
+          <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl w-full" :class="!isAddingNew && !isCurrentEditable ? 'opacity-70 pointer-events-none' : ''">
             <button type="button" @click="setEditFormType('expense')" :class="editForm.type === 'expense' ? 'bg-rose-500 text-white font-bold shadow' : 'text-slate-600'" class="py-1.5 rounded-lg text-xs font-semibold transition flex justify-center items-center gap-1.5">
               <i class="fa-solid fa-arrow-down"></i> 支出
             </button>
@@ -363,7 +378,8 @@
         <!-- 日期欄位 -->
         <div class="w-full">
           <label class="block text-xs font-semibold text-slate-500 mb-1">日期</label>
-          <div @click="openDatePickerModal()" class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-sm font-medium text-slate-700 flex justify-between items-center cursor-pointer hover:border-emerald-500 transition">
+          <div @click="openDatePickerModal()" class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-sm font-medium text-slate-700 flex justify-between items-center transition"
+               :class="!isAddingNew && !isCurrentEditable ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'cursor-pointer hover:border-emerald-500'">
             <span x-text="editForm.date"></span>
             <i class="fa-solid fa-calendar-days text-emerald-600"></i>
           </div>
@@ -372,7 +388,8 @@
         <!-- 分類欄位 -->
         <div class="w-full">
           <label class="block text-xs font-semibold text-slate-500 mb-1">分類</label>
-          <div @click="openCategoryPickerModal()" class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-sm font-medium text-slate-700 flex justify-between items-center cursor-pointer hover:border-emerald-500 transition">
+          <div @click="openCategoryPickerModal()" class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-sm font-medium text-slate-700 flex justify-between items-center transition"
+               :class="!isAddingNew && !isCurrentEditable ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'cursor-pointer hover:border-emerald-500'">
             <div class="flex items-center space-x-2">
               <i :class="getCategoryStyle(editForm.category).icon + ' ' + getCategoryStyle(editForm.category).textClass"></i>
               <span x-text="editForm.category"></span>
@@ -385,22 +402,23 @@
           <!-- 幣別欄位 -->
           <div>
             <label class="block text-xs font-semibold text-slate-500 mb-1">幣別</label>
-            <div @click="openCurrencyPickerModal()" class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-sm font-medium text-slate-700 flex justify-between items-center cursor-pointer hover:border-emerald-500 transition">
+            <div @click="openCurrencyPickerModal()" class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-sm font-medium text-slate-700 flex justify-between items-center transition"
+                 :class="!isAddingNew && !isCurrentEditable ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'cursor-pointer hover:border-emerald-500'">
               <span x-text="editForm.currency"></span>
               <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
             </div>
           </div>
           <div x-show="editForm.currency !== 'TWD'" x-cloak>
             <label class="block text-xs font-semibold text-slate-500 mb-1">匯率 (對 TWD)</label>
-            <input type="number" step="0.000001" x-model.number="editForm.exchangeRate" min="0.000001" placeholder="1.0" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-sm">
+            <input type="number" step="0.000001" x-model.number="editForm.exchangeRate" min="0.000001" placeholder="1.0" :disabled="!isAddingNew && !isCurrentEditable" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-sm" :class="!isAddingNew && !isCurrentEditable ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-white'">
           </div>
         </div>
 
         <div>
           <label class="block text-xs font-semibold text-slate-500 mb-1">金額 ($)</label>
           <div class="relative flex items-center">
-            <input type="number" step="0.000001" x-model.number="editForm.amount" required min="0.000001" placeholder="0" class="w-full pl-3 pr-10 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-sm">
-            <button type="button" @click="openCalculator()" class="absolute right-2 text-slate-400 hover:text-emerald-600 p-1.5 transition" title="開啟小算盤">
+            <input type="number" step="0.000001" x-model.number="editForm.amount" required min="0.000001" placeholder="0" :disabled="!isAddingNew && !isCurrentEditable" class="w-full pl-3 pr-10 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-sm" :class="!isAddingNew && !isCurrentEditable ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-white'">
+            <button type="button" @click="openCalculator()" :disabled="!isAddingNew && !isCurrentEditable" class="absolute right-2 text-slate-400 hover:text-emerald-600 p-1.5 transition disabled:opacity-30 disabled:cursor-not-allowed" title="開啟小算盤">
               <i class="fa-solid fa-calculator text-base"></i>
             </button>
           </div>
@@ -408,12 +426,15 @@
 
         <div>
           <label class="block text-xs font-semibold text-slate-500 mb-1">備註</label>
-          <input type="text" x-model="editForm.note" placeholder="例如：薪水、午餐" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-sm">
+          <input type="text" x-model="editForm.note" placeholder="例如：薪水、午餐" :disabled="!isAddingNew && !isCurrentEditable" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-sm" :class="!isAddingNew && !isCurrentEditable ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-white'">
         </div>
 
+        <!-- 底部按鈕：若是本人可更新/新增（兩顆按鈕各半），若非本人則取消按鈕變為 100% 寬度 -->
         <div class="flex gap-2 pt-2">
-          <button type="button" @click="showEditModal = false" :disabled="loading" class="w-1/2 py-2 border border-slate-300 rounded-lg text-slate-600 font-semibold hover:bg-slate-50 disabled:opacity-50 transition">取消</button>
-          <button type="submit" :disabled="loading" class="w-1/2 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-50 transition flex items-center justify-center gap-2">
+          <button type="button" @click="showEditModal = false" :disabled="loading" class="py-2 border border-slate-300 rounded-lg text-slate-600 font-semibold hover:bg-slate-50 disabled:opacity-50 transition" :class="isAddingNew || isCurrentEditable ? 'w-1/2' : 'w-full'">
+            <span x-text="isAddingNew || isCurrentEditable ? '取消' : '關閉'"></span>
+          </button>
+          <button type="submit" :disabled="loading" x-show="isAddingNew || isCurrentEditable" class="w-1/2 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-50 transition flex items-center justify-center gap-2">
             <span x-text="isAddingNew ? '新增紀錄' : '更新紀錄'"></span>
           </button>
         </div>
