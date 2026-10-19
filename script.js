@@ -26,28 +26,42 @@ function appData() {
     searchQuery: '',
     
     incomeCategories: ['薪水', '兼職', '獎金', '紅包', '中獎'],
-    expenseCategories: ['飲食', '住家', '交通', '購物', '醫療', '旅遊', 'Pet麻糬', '電信費', '電費', '水費', '瓦斯費', '手續費', '娛樂'],
+    get expenseCategories() {
+      if (this.currentAccountGroup === 'group2') {
+        return ['飲食', '住家', '交通', '購物', '醫療', '旅遊', 'Pet咪咪', '電信費', '電費', '水費', '瓦斯費', '手續費', '娛樂'];
+      }
+      return ['飲食', '住家', '交通', '購物', '醫療', '旅遊', 'Pet麻糬', '電信費', '電費', '水費', '瓦斯費', '手續費', '娛樂'];
+    },
     currencyOptions: ['TWD', 'USD', 'JPY', 'EUR', 'CNY', 'HKD', 'GBP', 'AUD', 'KRW'],
     
-    categoryStyles: {
-      '飲食': { icon: 'fa-solid fa-utensils', bgClass: 'bg-amber-100 text-amber-600', textClass: 'text-amber-500' },
-      '住家': { icon: 'fa-solid fa-house', bgClass: 'bg-indigo-100 text-indigo-600', textClass: 'text-indigo-500' },
-      '交通': { icon: 'fa-solid fa-car', bgClass: 'bg-blue-100 text-blue-600', textClass: 'text-blue-500' },
-      '購物': { icon: 'fa-solid fa-bag-shopping', bgClass: 'bg-pink-100 text-pink-600', textClass: 'text-pink-500' },
-      '醫療': { icon: 'fa-solid fa-notes-medical', bgClass: 'bg-red-100 text-red-600', textClass: 'text-red-500' },
-      '旅遊': { icon: 'fa-solid fa-plane', bgClass: 'bg-sky-100 text-sky-600', textClass: 'text-sky-500' },
-      'Pet麻糬': { icon: 'fa-solid fa-carrot', bgClass: 'bg-orange-100 text-orange-600', textClass: 'text-orange-500' },
-      '電信費': { icon: 'fa-solid fa-mobile-screen-button', bgClass: 'bg-cyan-100 text-cyan-600', textClass: 'text-cyan-500' },
-      '電費': { icon: 'fa-solid fa-bolt', bgClass: 'bg-yellow-100 text-yellow-600', textClass: 'text-yellow-500' },
-      '水費': { icon: 'fa-solid fa-droplet', bgClass: 'bg-teal-100 text-teal-600', textClass: 'text-teal-500' },
-      '瓦斯費': { icon: 'fa-solid fa-fire', bgClass: 'bg-rose-100 text-rose-600', textClass: 'text-rose-500' },
-      '手續費': { icon: 'fa-solid fa-receipt', bgClass: 'bg-slate-200 text-slate-700', textClass: 'text-slate-600' },
-      '娛樂': { icon: 'fa-solid fa-gamepad', bgClass: 'bg-purple-100 text-purple-600', textClass: 'text-purple-500' },
-      '薪水': { icon: 'fa-solid fa-money-bill-wave', bgClass: 'bg-emerald-100 text-emerald-600', textClass: 'text-emerald-500' },
-      '兼職': { icon: 'fa-solid fa-briefcase', bgClass: 'bg-green-100 text-green-600', textClass: 'text-green-500' },
-      '獎金': { icon: 'fa-solid fa-trophy', bgClass: 'bg-yellow-100 text-yellow-600', textClass: 'text-yellow-500' },
-      '紅包': { icon: 'fa-solid fa-envelope-open-text', bgClass: 'bg-red-100 text-red-600', textClass: 'text-red-500' },
-      '中獎': { icon: 'fa-solid fa-gift', bgClass: 'bg-fuchsia-100 text-fuchsia-600', textClass: 'text-fuchsia-500' }
+    get categoryStyles() {
+      const baseStyles = {
+        '飲食': { icon: 'fa-solid fa-utensils', bgClass: 'bg-amber-100 text-amber-600', textClass: 'text-amber-500' },
+        '住家': { icon: 'fa-solid fa-house', bgClass: 'bg-indigo-100 text-indigo-600', textClass: 'text-indigo-500' },
+        '交通': { icon: 'fa-solid fa-car', bgClass: 'bg-blue-100 text-blue-600', textClass: 'text-blue-500' },
+        '購物': { icon: 'fa-solid fa-bag-shopping', bgClass: 'bg-pink-100 text-pink-600', textClass: 'text-pink-500' },
+        '醫療': { icon: 'fa-solid fa-notes-medical', bgClass: 'bg-red-100 text-red-600', textClass: 'text-red-500' },
+        '旅遊': { icon: 'fa-solid fa-plane', bgClass: 'bg-sky-100 text-sky-600', textClass: 'text-sky-500' },
+        '電信費': { icon: 'fa-solid fa-mobile-screen-button', bgClass: 'bg-cyan-100 text-cyan-600', textClass: 'text-cyan-500' },
+        '電費': { icon: 'fa-solid fa-bolt', bgClass: 'bg-yellow-100 text-yellow-600', textClass: 'text-yellow-500' },
+        '水費': { icon: 'fa-solid fa-droplet', bgClass: 'bg-teal-100 text-teal-600', textClass: 'text-teal-500' },
+        '瓦斯費': { icon: 'fa-solid fa-fire', bgClass: 'bg-rose-100 text-rose-600', textClass: 'text-rose-500' },
+        '手續費': { icon: 'fa-solid fa-receipt', bgClass: 'bg-slate-200 text-slate-700', textClass: 'text-slate-600' },
+        '娛樂': { icon: 'fa-solid fa-gamepad', bgClass: 'bg-purple-100 text-purple-600', textClass: 'text-purple-500' },
+        '薪水': { icon: 'fa-solid fa-money-bill-wave', bgClass: 'bg-emerald-100 text-emerald-600', textClass: 'text-emerald-500' },
+        '兼職': { icon: 'fa-solid fa-briefcase', bgClass: 'bg-green-100 text-green-600', textClass: 'text-green-500' },
+        '獎金': { icon: 'fa-solid fa-trophy', bgClass: 'bg-yellow-100 text-yellow-600', textClass: 'text-yellow-500' },
+        '紅包': { icon: 'fa-solid fa-envelope-open-text', bgClass: 'bg-red-100 text-red-600', textClass: 'text-red-500' },
+        '中獎': { icon: 'fa-solid fa-gift', bgClass: 'bg-fuchsia-100 text-fuchsia-600', textClass: 'text-fuchsia-500' }
+      };
+
+      if (this.currentAccountGroup === 'group2') {
+        baseStyles['Pet咪咪'] = { icon: 'fa-solid fa-cat', bgClass: 'bg-orange-100 text-orange-600', textClass: 'text-orange-500' };
+      } else {
+        baseStyles['Pet麻糬'] = { icon: 'fa-solid fa-carrot', bgClass: 'bg-orange-100 text-orange-600', textClass: 'text-orange-500' };
+      }
+
+      return baseStyles;
     },
 
     monthOptions: ['01','02','03','04','05','06','07','08','09','10','11','12'],
